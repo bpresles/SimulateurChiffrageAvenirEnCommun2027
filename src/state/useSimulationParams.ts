@@ -27,6 +27,7 @@ const NUM: Record<CleNum, { k: string; min: number; max: number }> = {
   cadesPct: { k: 'cd', min: 0, max: 100 },
   primaireBcePct: { k: 'pr', min: 0, max: 100 },
   circuitTresorPct: { k: 'ct', min: 0, max: 100 },
+  croissanceNominalePct: { k: 'cr', min: 0, max: 5 },
 }
 
 export interface EtatUrl {
@@ -69,8 +70,9 @@ export function ecrireUrl(etat: EtatUrl): string {
   return q.toString()
 }
 
+/** Compare les paramètres des préréglages ; la croissance nominale n'en fait pas partie. */
 const memeParams = (a: SimulationParams, b: SimulationParams) =>
-  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => a[k] === b[k])
+  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => k === 'croissanceNominalePct' || a[k] === b[k])
 
 export function useSimulationParams() {
   const initial = useMemo(() => lireUrl(window.location.search), [])
@@ -84,7 +86,7 @@ export function useSimulationParams() {
 
   const appliquerScenario = useCallback((cle: CleScenario) => {
     const s = SCENARIOS.find((x) => x.cle === cle)
-    if (s) setParams({ ...s.params })
+    if (s) setParams((p) => ({ ...s.params, croissanceNominalePct: p.croissanceNominalePct }))
   }, [])
 
   const setOnglet = useCallback((o: Onglet) => setOngletEtat(o), [])

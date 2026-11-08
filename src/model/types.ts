@@ -23,6 +23,8 @@ export interface SimulationParams {
   primaireBcePct: number
   circuitTresorPct: number
   cadesCompteDansSolde: boolean
+  /** 0..5 : croissance nominale tendancielle du PIB (%/an), utilisée par les trajectoires seulement. */
+  croissanceNominalePct: number
 }
 
 export interface ModelOptions {

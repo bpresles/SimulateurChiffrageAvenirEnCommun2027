@@ -134,8 +134,8 @@ Solde = Recettes − Dépenses + ROI direct + ROI indirect + Coûts évités
           Le Monte-Carlo ne porte que sur le volume d’investissement des filières ; les autres paramètres sont ceux des curseurs. Le P10 du total n’est pas la somme des P10 sectoriels.
         </p>
         <p className="mt-2 text-sm text-ink-soft">
-          <strong>Trajectoire 2026-2032.</strong> PIB<sub>t</sub> = PIB<sub>2026</sub> × 1,025<sup>(t−2026)</sup> ; solde<sub>t</sub> = −5,4 % × PIB<sub>t</sub> + effet<sub>t</sub> ; dette<sub>t</sub> = dette<sub>t−1</sub> − solde<sub>t</sub>.
-          Effet nul en 2026, solde An 1 en 2027, interpolation linéaire en 2028-2029, solde d’année pleine dès 2030.
+          <strong>Trajectoire 2026-2032.</strong> PIB<sub>t</sub> = PIB<sub>2026</sub> × (1 + g)<sup>(t−2026)</sup>, g = croissance nominale tendancielle (2,5 % par défaut, réglable de 0 à 5 % en hypothèses avancées ; sans effet sur le solde en Md€, seulement sur les ratios en % du PIB) ; solde<sub>t</sub> = −5,4 % × PIB<sub>t</sub> + effet<sub>t</sub> × PIB<sub>t</sub> / PIB<sub>2027</sub> ; dette<sub>t</sub> = dette<sub>t−1</sub> − solde<sub>t</sub>.
+          Effet nul en 2026, solde An 1 en 2027, interpolation linéaire en 2028-2029, solde d’année pleine dès 2030. Les montants du moteur sont en euros 2027 ; dans la trajectoire, l’effet du programme est indexé sur le PIB nominal (assiettes et dépenses croissent avec lui).
         </p>
       </Carte>
 

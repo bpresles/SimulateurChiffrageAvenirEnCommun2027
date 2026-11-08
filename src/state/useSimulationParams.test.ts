@@ -17,4 +17,10 @@ describe('synchronisation URL', () => {
     expect(e.params.multiplicateur).toBe(1.45)
     expect(e.onglet).toBe('simulateur')
   })
+  it('la croissance nominale est synchronisée avec l’URL, 2,5 par défaut', () => {
+    expect(lireUrl('').params.croissanceNominalePct).toBe(2.5)
+    const e = lireUrl(ecrireUrl({ params: { ...SCENARIOS[1].params, croissanceNominalePct: 1.3 }, rho: 0.5, onglet: 'simulateur' }))
+    expect(e.params.croissanceNominalePct).toBe(1.3)
+    expect(lireUrl('?cr=9').params.croissanceNominalePct).toBe(5)
+  })
 })

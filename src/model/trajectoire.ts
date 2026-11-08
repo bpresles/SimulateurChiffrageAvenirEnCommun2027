@@ -25,14 +25,21 @@ export function effetProgramme(annee: number, effetAn1: number, effetAP: number)
   return effetAn1 + ((effetAP - effetAn1) * (annee - 2027)) / 3
 }
 
-export function calculerTrajectoire(effetAn1: number, effetAP: number, gelPct: number): PointTrajectoire[] {
+export function calculerTrajectoire(
+  effetAn1: number,
+  effetAP: number,
+  gelPct: number,
+  croissancePct: number = hv('croissanceNominale'),
+): PointTrajectoire[] {
   const pib0 = hv('pib2026')
-  const g = hv('croissanceNominale') / 100
+  const g = croissancePct / 100
   const def = hv('deficitTendanciel') / 100
   let dettePrec = hv('dette2026')
   return ANNEES.map((annee) => {
     const pib = pib0 * Math.pow(1 + g, annee - 2026)
-    const solde = def * pib + effetProgramme(annee, effetAn1, effetAP)
+    // Les montants du moteur sont en euros 2027 : l'effet est indexé sur le PIB nominal.
+    const pib2027 = pib0 * (1 + g)
+    const solde = def * pib + (effetProgramme(annee, effetAn1, effetAP) * pib) / pib2027
     // Dette 2026 : stock de départ ; ensuite dette_t = dette_{t-1} − solde_t.
     const dette = annee === 2026 ? dettePrec : dettePrec - solde
     dettePrec = dette
@@ -56,8 +63,8 @@ export function trajectoiresPourParams(
   const effetAn1 = simuler({ ...params, horizon: 'an1' }, options).solde
   const effetAP = simuler({ ...params, horizon: 'anneePleine' }, options).solde
   return {
-    programme: calculerTrajectoire(effetAn1, effetAP, params.gelBcePct),
-    tendanciel: calculerTrajectoire(0, 0, 0),
+    programme: calculerTrajectoire(effetAn1, effetAP, params.gelBcePct, params.croissanceNominalePct),
+    tendanciel: calculerTrajectoire(0, 0, 0, params.croissanceNominalePct),
     effetAn1,
     effetAP,
   }

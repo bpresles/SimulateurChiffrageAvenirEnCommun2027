@@ -1,5 +1,5 @@
 import { HYPOTHESES } from '../../data/hypotheses'
-import { fmtNombre, fmtValeurUnite } from '../../lib/format'
+import { fmtNombre, fmtPct, fmtValeurUnite } from '../../lib/format'
 import type { SimulationParams } from '../../model/types'
 import { Badge } from '../ui/Badge'
 import { Slider } from '../ui/Slider'
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
-  const lecture = ['tauxBonification', 'risqueSpread', 'pib2026', 'croissanceNominale', 'deficitTendanciel', 'dette2026', 'stockBce'] as const
+  const lecture = ['tauxBonification', 'risqueSpread', 'pib2026', 'deficitTendanciel', 'dette2026', 'stockBce'] as const
   return (
     <details className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <summary className="cursor-pointer text-base font-bold">Hypothèses avancées</summary>
@@ -26,6 +26,15 @@ export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
             texteVocal={`${params.retoursCourantsBase} milliards d'euros`}
             badge={<Badge statut="hypothese-non-sourcee" court />}
             aide="Valeur d’origine : 14. Proportionnel au multiplicateur, réduit en An 1."
+          />
+          <Slider
+            label="Croissance nominale tendancielle du PIB"
+            valeur={params.croissanceNominalePct} min={0} max={5} pas={0.1}
+            onChange={(v) => setParam('croissanceNominalePct', v)}
+            affichage={fmtPct(params.croissanceNominalePct)}
+            texteVocal={`${fmtNombre(params.croissanceNominalePct)} pour cent par an`}
+            badge={<Badge statut="hypothese-modele" court />}
+            aide="Croissance nominale du PIB (réelle + inflation) dans les trajectoires. N’affecte pas le solde en Md€, seulement les ratios en % du PIB."
           />
           <Slider
             label="Corrélation entre filières (Monte-Carlo, ρ)"
