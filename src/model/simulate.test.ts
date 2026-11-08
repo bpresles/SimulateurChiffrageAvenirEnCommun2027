@@ -4,7 +4,9 @@ import { FILIERES } from '../data/filieres'
 import { HYPOTHESES } from '../data/hypotheses'
 import { SCENARIOS, type CleScenario } from '../data/scenarios'
 import { FILIERES_GEMINI } from './fixtures/filieresGemini'
+import { SCENARIOS_GEMINI } from './fixtures/scenariosGemini'
 import { agregerFilieres } from './filieres'
+import { paramsPreset } from './presets'
 import { interpPercentile } from './percentile'
 import { OPTIONS_ORIGINE, OPTIONS_PAR_DEFAUT, impactCorrections, simuler } from './simulate'
 
@@ -69,14 +71,31 @@ describe('données des filières', () => {
 
 describe('non-régression avec le modèle d’origine (données Gemini figées, corrections désactivées)', () => {
   const origine = { ...OPTIONS_ORIGINE, filieres: FILIERES_GEMINI, gelBceBrut: 22 }
-  const attendu: Record<CleScenario, number> = {
-    an1: 69.0, complet: 157.5, haut: 188.9, median: 108.8, 'sans-leviers': -24.9, stress: -59.1,
-  }
-  for (const [cle, valeur] of Object.entries(attendu) as [CleScenario, number][]) {
+  const attendu = { an1: 69.0, complet: 157.5, haut: 188.9, median: 108.8, orthodoxe: -24.9, stress: -59.1 } as const
+  for (const [cle, valeur] of Object.entries(attendu) as [keyof typeof attendu, number][]) {
     it(`${cle} ≈ ${valeur}`, () => {
-      expect(Math.abs(simuler(scenario(cle), origine).solde - valeur)).toBeLessThanOrEqual(0.3)
+      expect(Math.abs(simuler(SCENARIOS_GEMINI[cle], origine).solde - valeur)).toBeLessThanOrEqual(0.3)
     })
   }
+})
+
+describe('bonification du pôle bancaire réglable', () => {
+  it('0 % par défaut : aucune friction de bonification', () => {
+    for (const s of SCENARIOS) {
+      expect(s.params.tauxBonificationPct).toBe(0)
+      expect(simuler(s.params).frictions.bonification).toBe(0)
+    }
+  })
+  it('avec 8 %, on retrouve les soldes d’avant pour « hypothèses basses » (−9,0 avec, −27,2 sans)', () => {
+    expect(simuler({ ...paramsPreset('bas', false), tauxBonificationPct: 8 }).solde).toBeCloseTo(-9.0, 1)
+    expect(simuler({ ...paramsPreset('bas', true), tauxBonificationPct: 8 }).solde).toBeCloseTo(-27.2, 1)
+  })
+  it('la friction évitée par le levier suit le taux réglé', () => {
+    const p = { ...scenario('complet'), primaireBcePct: 0, tauxBonificationPct: 4 }
+    const r = simuler(p)
+    expect(r.frictions.bonificationSansLevier).toBeCloseTo(r.agregat.totalBanque * 0.04, 9)
+    expect(r.frictions.bonification).toBeCloseTo(r.frictions.bonificationSansLevier, 9)
+  })
 })
 
 describe('gel BCE', () => {
@@ -90,7 +109,7 @@ describe('gel BCE', () => {
 
 describe('corrections', () => {
   it('le levier primaire améliore le solde de 6,5 + bonification, pas du double', () => {
-    const p = { ...scenario('complet'), primaireBcePct: 0 }
+    const p = { ...scenario('complet'), primaireBcePct: 0, tauxBonificationPct: 8 }
     const a = simuler(p)
     const b = simuler({ ...p, primaireBcePct: 100 })
     const bonif = a.agregat.totalBanque * 0.08
@@ -122,7 +141,7 @@ describe('corrections', () => {
     expect(impactCorrections({ ...scenario('complet'), cadesCompteDansSolde: false }).find((x) => x.cle === 'cades')!.active).toBe(true)
   })
   it('la bonification n’est comptée en An 1 qu’avec la correction', () => {
-    const p = { ...scenario('an1'), primaireBcePct: 0 }
+    const p = { ...scenario('an1'), primaireBcePct: 0, tauxBonificationPct: 8 }
     expect(simuler(p, OPTIONS_ORIGINE).frictions.bonification).toBe(0)
     expect(simuler(p).frictions.bonification).toBeGreaterThan(0)
   })

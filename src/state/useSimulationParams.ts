@@ -29,6 +29,7 @@ const NUM: Record<CleNum, { k: string; min: number; max: number }> = {
   primaireBcePct: { k: 'pr', min: 0, max: 100 },
   circuitTresorPct: { k: 'ct', min: 0, max: 100 },
   croissanceNominalePct: { k: 'cr', min: 0, max: 5 },
+  tauxBonificationPct: { k: 'bo', min: 0, max: 8 },
 }
 
 export interface EtatUrl {
@@ -89,7 +90,7 @@ export function useSimulationParams() {
 
   /** Applique un préréglage dans la variante donnée ; la croissance nominale en cours est conservée. */
   const appliquerScenario = useCallback((cle: CleScenario, sans: boolean) => {
-    setParams((p) => ({ ...paramsPreset(cle, sans), croissanceNominalePct: p.croissanceNominalePct }))
+    setParams((p) => ({ ...paramsPreset(cle, sans), croissanceNominalePct: p.croissanceNominalePct, tauxBonificationPct: p.tauxBonificationPct }))
   }, [])
 
   const setOnglet = useCallback((o: Onglet) => setOngletEtat(o), [])

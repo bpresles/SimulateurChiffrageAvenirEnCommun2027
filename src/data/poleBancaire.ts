@@ -17,7 +17,6 @@ export const POLE_BANCAIRE_FAITS: FaitPole[] = [
 ]
 
 export const NOTE_BONIFICATION =
-  'Hypothèse de modélisation : le programme (S4) affirme l’équilibre financier du pôle ; seuls l’escompte à taux zéro pour les TPE-PME (S6) et des aides à la pierre compensant la hausse du taux du livret A (S4) pourraient peser sur le budget, sans montant officiel.'
-
+  'Coût pour l’État si le pôle public bancaire prêtait sous son coût de financement. Le programme indique que le pôle « doit rester à l’équilibre financier », se finance notamment par « une création monétaire supplémentaire » et le refinancement auprès de la BCE, « sans peser sur le budget de l’État » (S4) : 0 % par défaut. Seuls l’escompte à taux zéro pour les TPE-PME (S6) et des aides à la pierre (S4) pourraient peser sur le budget, sans montant officiel.'
 export const NOTE_SECTEURS =
   'Les secteurs sont cités par le programme (S1, S4) : logement, transports, énergie, industrialisation, acier, textile, médicament, agriculture bio, numérique, robotique, spatial, maritime, eau, réseaux. Les montants associés sont des hypothèses non sourcées.'

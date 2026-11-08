@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { ecrireUrl, lireUrl } from './useSimulationParams'
-import { SCENARIOS } from '../data/scenarios'
+import { PARAMS_PAR_DEFAUT, SCENARIOS } from '../data/scenarios'
 
 describe('synchronisation URL', () => {
   it('aller-retour sans perte', () => {
@@ -19,8 +19,11 @@ describe('synchronisation URL', () => {
   })
   it('la croissance nominale est synchronisée avec l’URL, 2,5 par défaut', () => {
     expect(lireUrl('').params.croissanceNominalePct).toBe(2.5)
-    const e = lireUrl(ecrireUrl({ params: { ...SCENARIOS[1].params, croissanceNominalePct: 1.3 }, rho: 0.5, onglet: 'simulateur' }))
+    const e = lireUrl(ecrireUrl({ params: { ...PARAMS_PAR_DEFAUT, croissanceNominalePct: 1.3 }, rho: 0.5, onglet: 'simulateur' }))
     expect(e.params.croissanceNominalePct).toBe(1.3)
     expect(lireUrl('?cr=9').params.croissanceNominalePct).toBe(5)
+    expect(lireUrl('').params.tauxBonificationPct).toBe(0)
+    expect(lireUrl('?bo=4.5').params.tauxBonificationPct).toBe(4.5)
+    expect(lireUrl('?bo=20').params.tauxBonificationPct).toBe(8)
   })
 })

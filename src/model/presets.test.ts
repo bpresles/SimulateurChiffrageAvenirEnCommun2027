@@ -20,11 +20,28 @@ describe('variantes sans leviers monétaires', () => {
       expect(reconnaitrePreset(paramsPreset(cle, true))).toEqual({ cle, sansLeviers: true })
     })
   }
-  it('sans-leviers et stress n’ont pas de variante et sont reconnus tels quels', () => {
-    for (const cle of ['sans-leviers', 'stress'] as const) {
-      expect(paramsPreset(cle, true)).toEqual(paramsPreset(cle, false))
-      expect(reconnaitrePreset(paramsPreset(cle, true))).toEqual({ cle, sansLeviers: false })
-    }
+  it('stress n’a pas de variante, reste inchangé (CADES à 0) et est reconnu tel quel', () => {
+    expect(paramsPreset('stress', true)).toEqual(paramsPreset('stress', false))
+    expect(paramsPreset('stress', false).cadesPct).toBe(0)
+    expect(reconnaitrePreset(paramsPreset('stress', true))).toEqual({ cle: 'stress', sansLeviers: false })
+  })
+  it('« bas » (P30) : CADES à 100 % dans les deux variantes, seul le gel BCE est actif avec (100), tout à 0 sans', () => {
+    const avec = paramsPreset('bas', false)
+    const sans = paramsPreset('bas', true)
+    expect([avec.percentile, avec.multiplicateur, avec.recettesAnneePleinePct, avec.recouvrementPct]).toEqual([30, 1.05, 35, 72])
+    expect(avec.cadesPct).toBe(100)
+    expect(sans.cadesPct).toBe(100)
+    expect([avec.gelBcePct, avec.primaireBcePct, avec.circuitTresorPct]).toEqual([100, 0, 0])
+    expect([sans.gelBcePct, sans.primaireBcePct, sans.circuitTresorPct]).toEqual([0, 0, 0])
+    expect(simuler(sans).solde).toBeLessThan(simuler(avec).solde)
+    // les deux variantes ne diffèrent que par le gel BCE
+    expect({ ...sans, gelBcePct: 100 }).toEqual(avec)
+  })
+  it('« bas » sans leviers n’est confondu avec aucun autre préréglage', () => {
+    expect(reconnaitrePreset(paramsPreset('bas', true))).toEqual({ cle: 'bas', sansLeviers: true })
+    expect(reconnaitrePreset(paramsPreset('bas', false))).toEqual({ cle: 'bas', sansLeviers: false })
+    for (const cle of CLES_AVEC_VARIANTE.filter((c) => c !== 'bas'))
+      for (const sans of [true, false]) expect(reconnaitrePreset(paramsPreset(cle, sans))!.cle).toBe(cle)
   })
   it('un jeu modifié n’est pas reconnu, la croissance nominale est ignorée', () => {
     const p = paramsPreset('complet', false)

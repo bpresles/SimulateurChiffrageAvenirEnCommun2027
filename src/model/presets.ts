@@ -2,7 +2,7 @@ import { SCENARIOS, type CleScenario } from '../data/scenarios'
 import type { SimulationParams } from './types'
 
 /** Préréglages disposant d'une variante « sans leviers monétaires ». */
-export const CLES_AVEC_VARIANTE: readonly CleScenario[] = ['an1', 'complet', 'haut', 'median']
+export const CLES_AVEC_VARIANTE: readonly CleScenario[] = ['an1', 'complet', 'haut', 'median', 'bas']
 
 export const aUneVariante = (cle: CleScenario): boolean => CLES_AVEC_VARIANTE.includes(cle)
 
@@ -16,9 +16,9 @@ export function paramsPreset(cle: CleScenario, sans: boolean): SimulationParams 
   return sans && aUneVariante(cle) ? sansLeviers(base) : { ...base }
 }
 
-/** Compare deux jeux de paramètres ; la croissance nominale n'en fait pas partie. */
+/** Compare deux jeux de paramètres ; la croissance nominale et le taux de bonification n'en font pas partie. */
 export const memeParams = (a: SimulationParams, b: SimulationParams): boolean =>
-  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => k === 'croissanceNominalePct' || a[k] === b[k])
+  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => k === 'croissanceNominalePct' || k === 'tauxBonificationPct' || a[k] === b[k])
 
 export interface PresetReconnu {
   cle: CleScenario

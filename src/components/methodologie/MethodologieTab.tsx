@@ -120,7 +120,7 @@ CADES (comptée)= AP ? 19 × cades : 0 (par défaut) ; 0 si l’option « compte
 Primaire BCE   = 6,5 × primaire × (AP ? 1 : 0,5)
 Circuit Trésor = 8,5 × trésor × (AP ? 1 : 0,5)
 Fuite import   = max(2,5 ; (1,85 − mult) × 8)
-Bonification   = Banque × 0,08 × (1 − primaire) × échelle
+Bonification   = Banque × taux × (1 − primaire) × échelle   (taux : 0 % par défaut, réglable de 0 à 8 %)
 Frictions      = AP ? bonification + (1 − trésor) × 11 + fuite : fuite × 0,6 + bonification
 Solde = Recettes − Dépenses + ROI direct + ROI indirect + Coûts évités
         + Effet récessif + Leviers − Frictions`}</Eq>
@@ -206,7 +206,7 @@ Solde = Recettes − Dépenses + ROI direct + ROI indirect + Coûts évités
             ['Gain brut du gel BCE', '22 Md€', 'Environ 18,2 Md€ (prorata du stock : 597,0 × taux implicite + OATi)'],
             ['Dette 2026', '118 % du PIB', '3 595 Md€ (S1), soit 119,8 % du PIB hypothétique de 3 000 Md€'],
             ['Montant de la CADES', 'Hypothèse non sourcée', '19 Md€/an (S6)'],
-            ['Coût de bonification du pôle (8 %)', 'Présenté comme donnée', 'Hypothèse de modélisation : S4 affirme l’équilibre financier du pôle'],
+            ['Bonification du pôle bancaire', '8 % (Gemini)', '0 % par défaut, réglable de 0 à 8 % (S4 : le pôle doit rester à l’équilibre financier)'],
           ].map(([a, b, c]) => (
             <tr key={a} className="border-b border-line/70 align-top">
               <th scope="row" className="px-2 py-2 font-medium">{a}</th>
@@ -255,7 +255,7 @@ Solde = Recettes − Dépenses + ROI direct + ROI indirect + Coûts évités
           <li>Modèle statique : pas d’effet « boule de neige » des intérêts, croissance exogène, pas de réaction des marchés ni des agents modélisée finement.</li>
           <li>Le Monte-Carlo n’explore que l’incertitude sur le volume d’investissement des filières ; les autres paramètres sont fixes.</li>
           <li>Le stock détenu par l’Eurosystème baisse chaque année (titres échus non réinvestis) : le gain d’un gel diminue donc avec le temps, ce que le modèle « année pleine » ne représente pas.</li>
-          <li>Une partie des intérêts perçus par la Banque de France revient à l’État via ses bénéfices ; le gain net pour les finances publiques peut être inférieur au gain brut affiché du gel.</li>
+          <li>Gel BCE : hypothèse du modèle (non présente dans les sources S1, S4, S6) selon laquelle les réserves bancaires créées par les rachats de la BCE sont converties en réserves obligatoires non rémunérées ; la Banque de France cesse alors à la fois de percevoir les intérêts des titres gelés et de rémunérer ces réserves, l’opération est neutre pour elle et l’État conserve le gain brut. Le coût est supporté par les banques. Décision relevant de la BCE.</li>
           <li>Les montants du programme sont supposés constants en euros 2027 ; leur poids en % du PIB diminue donc à mesure que le PIB croît.</li>
           <li>Le coefficient récessif et le taux de retour fiscal sont des hypothèses de modélisation.</li>
           <li>Une conversion de dette en dette perpétuelle ne réduit pas la dette au sens de Maastricht.</li>
