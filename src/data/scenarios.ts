@@ -1,4 +1,5 @@
 import type { SimulationParams } from '../model/types'
+import { HYPOTHESES } from './hypotheses'
 
 export type CleScenario = 'an1' | 'complet' | 'haut' | 'median' | 'sans-leviers' | 'stress'
 
@@ -8,6 +9,7 @@ export const NOUVEAUX_PARAMS_DEFAUT = {
   partBudgetaireCoutsEvitesPct: 25,
   retoursCourantsBase: 14,
   cadesCompteDansSolde: true,
+  croissanceNominalePct: HYPOTHESES.croissanceNominale.valeur,
 } as const
 
 export interface Scenario {

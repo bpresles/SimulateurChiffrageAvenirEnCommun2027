@@ -49,7 +49,7 @@ export const HYPOTHESES = {
   nTirages: { libelle: 'Nombre de tirages Monte-Carlo', valeur: 5000, unite: 'tirages', statut: 'hypothese-modele', source: REFONTE, note: 'PRNG mulberry32 à graine fixe : résultats reproductibles.' },
   graine: { libelle: 'Graine du générateur pseudo-aléatoire', valeur: 20270, unite: '', statut: 'hypothese-modele', source: REFONTE, note: 'Fixe pour la reproductibilité.' },
   pib2026: { libelle: 'PIB 2026', valeur: 3000, unite: 'Md€', statut: 'hypothese-modele', source: REFONTE, note: NOTE_ORDRE },
-  croissanceNominale: { libelle: 'Croissance nominale tendancielle', valeur: 2.5, unite: '%/an', statut: 'hypothese-modele', source: REFONTE, note: NOTE_ORDRE },
+  croissanceNominale: { libelle: 'Croissance nominale tendancielle (valeur par défaut)', valeur: 2.5, unite: '%/an', statut: 'hypothese-modele', source: REFONTE, note: NOTE_ORDRE + ' Réglable de 0 à 5 % dans les hypothèses avancées ; sans effet sur le solde en Md€, seulement sur les ratios en % du PIB.' },
   deficitTendanciel: { libelle: 'Déficit tendanciel (constant)', valeur: -5.4, unite: '% du PIB', statut: 'officiel', source: CADRAGE, refs: ['S1'], note: 'Le déficit « passe de 5,1 % à 5,4 % » avec le budget 2026 (S1). Maintenu constant dans le scénario tendanciel.' },
   dette2026: { libelle: 'Dette publique 2026', valeur: 3595, unite: 'Md€', statut: 'officiel', source: CADRAGE, refs: ['S1', 'S6'], note: 'Le ratio de départ est calculé avec le PIB 2026 ci-dessus (hypothèse, à mettre à jour).' },
 } as const satisfies Record<string, Hypothese>

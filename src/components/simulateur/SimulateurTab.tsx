@@ -99,7 +99,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
         </div>
         <div className="mt-4 space-y-1 text-xs text-ink-soft">
           <p>
-            Hypothèses : PIB 2026 de {hv('pib2026')} Md€, croissance nominale de {fmtPct(hv('croissanceNominale'))} par an, déficit tendanciel de {fmtPct(hv('deficitTendanciel'))} du PIB, dette 2026 de {fmtNombre(hv('dette2026'), 0)} Md€ (source officielle S1 pour le déficit et la dette ; PIB et croissance : ordres de grandeur du modèle d’origine, à mettre à jour).
+            Hypothèses : PIB 2026 de {hv('pib2026')} Md€, croissance nominale de {fmtPct(params.croissanceNominalePct)} par an (réglable), déficit tendanciel de {fmtPct(hv('deficitTendanciel'))} du PIB, dette 2026 de {fmtNombre(hv('dette2026'), 0)} Md€ (source officielle S1 pour le déficit et la dette ; PIB et croissance : ordres de grandeur du modèle d’origine, à mettre à jour).
             L’effet du programme est nul en 2026, égal au solde An 1 en 2027, interpolé en 2028-2029, puis égal au solde d’année pleine dès 2030.
           </p>
           <p>
