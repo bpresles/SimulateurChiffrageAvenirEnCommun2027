@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { Filiere } from '../../data/filieres'
+import { LIBELLE_POLE } from '../../data/filieres'
 import { fmtMd } from '../../lib/format'
 import type { Agregat } from '../../model/types'
 import { useLargeurConteneur } from '../../lib/useLargeurConteneur'
@@ -24,7 +25,7 @@ export function BarresFilieres({ filieres, agregat, libellePercentile }: { filie
       <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block" role="img" aria-labelledby={`${id}-t ${id}-d`}>
         <title id={`${id}-t`}>Investissement par filière ({libellePercentile})</title>
         <desc id={`${id}-d`}>
-          Barres horizontales : part État et part Pôle bancaire de chaque filière au {libellePercentile}, avec une moustache allant du P10 au P90 de la filière.
+          Barres horizontales : part État et part {LIBELLE_POLE} de chaque filière au {libellePercentile}, avec une moustache allant du P10 au P90 de la filière.
         </desc>
         {ticks.map((t) => (
           <g key={t}>
@@ -41,7 +42,7 @@ export function BarresFilieres({ filieres, agregat, libellePercentile }: { filie
                 {f.num}. {f.nom.length > maxCar ? f.nom.slice(0, maxCar - 1).trimEnd() + '…' : f.nom}
               </text>
               <rect x={x(0)} y={cy - 8} width={Math.max(0, x(d.etat) - x(0))} height={16} fill="var(--color-brand)" />
-              <rect x={x(d.etat)} y={cy - 8} width={Math.max(0, x(d.etat + d.banque) - x(d.etat))} height={16} fill="var(--color-info)" opacity={0.75} />
+              <rect x={x(d.etat)} y={cy - 8} width={Math.max(0, x(d.etat + d.banque) - x(d.etat))} height={16} fill="var(--color-serie-2)" />
               <line x1={x(f.p10)} x2={x(f.p90)} y1={cy} y2={cy} stroke="var(--color-ink)" strokeWidth={1.5} />
               <line x1={x(f.p10)} x2={x(f.p10)} y1={cy - 6} y2={cy + 6} stroke="var(--color-ink)" strokeWidth={1.5} />
               <line x1={x(f.p90)} x2={x(f.p90)} y1={cy - 6} y2={cy + 6} stroke="var(--color-ink)" strokeWidth={1.5} />
@@ -53,12 +54,12 @@ export function BarresFilieres({ filieres, agregat, libellePercentile }: { filie
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
         <li className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 bg-brand" />État</li>
-        <li className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 bg-info opacity-75" />Pôle bancaire</li>
+        <li className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 bg-serie-2" />Pôle bancaire</li>
         <li className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 bg-ink" />Moustache P10 – P90 de la filière</li>
       </ul>
       <TableauDonnees
         legende="Investissement par filière"
-        colonnes={['Filière', `État (${libellePercentile})`, 'Pôle bancaire', 'Total', 'P10', 'P90']}
+        colonnes={['Filière', `État (${libellePercentile})`, LIBELLE_POLE, 'Total', 'P10', 'P90']}
         lignes={filieres.map((f) => {
           const d = parId.get(f.id)!
           return [`${f.num}. ${f.nom}`, fmtMd(d.etat, { decimales: 2, unite: false }), fmtMd(d.banque, { decimales: 2, unite: false }), fmtMd(d.invest, { decimales: 2, unite: false }), fmtMd(f.p10, { decimales: 2, unite: false }), fmtMd(f.p90, { decimales: 2, unite: false })]

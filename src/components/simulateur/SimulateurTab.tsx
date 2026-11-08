@@ -1,4 +1,4 @@
-import { fmtPct } from '../../lib/format'
+import { fmtNombre, fmtPct } from '../../lib/format'
 import type { Modele } from '../../state/useModele'
 import type { useSimulationParams } from '../../state/useSimulationParams'
 import { Cascade } from '../charts/Cascade'
@@ -22,7 +22,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
   return (
     <div className="space-y-5">
       <Carte>
-        <h1 className="text-xl font-extrabold">Explorer les effets budgétaires d’un programme de dépenses, de recettes et d’investissement</h1>
+        <h2 className="text-xl font-extrabold">Explorer les effets budgétaires d’un programme de dépenses, de recettes et d’investissement</h2>
         <div className="mt-2 max-w-4xl space-y-2 text-sm text-ink-soft">
           <p>
             Cet outil reprend un chiffrage budgétaire fondé sur le cadrage de première année publié par le programme et sur des hypothèses
@@ -75,6 +75,9 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
             description="Solde public en pourcentage du PIB de 2026 à 2032, avec le programme et en tendanciel (déficit constant)."
             annees={ANNEES}
             unite="% du PIB"
+            domaine={[-7, 0]}
+            pasGraduation={1}
+            decimales={1}
             series={[
               { nom: 'Avec le programme', couleur: 'var(--color-brand)', valeurs: t.programme.map((p) => p.soldePct) },
               { nom: 'Tendanciel', couleur: 'var(--color-ink-soft)', pointille: true, valeurs: t.tendanciel.map((p) => p.soldePct) },
@@ -96,7 +99,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
         </div>
         <div className="mt-4 space-y-1 text-xs text-ink-soft">
           <p>
-            Hypothèses : PIB 2026 de {hv('pib2026')} Md€, croissance nominale de {fmtPct(hv('croissanceNominale'))} par an, déficit tendanciel de {fmtPct(hv('deficitTendanciel'))} du PIB, dette 2026 de {hv('dettePib2026')} % du PIB (ordres de grandeur repris du modèle d’origine, à mettre à jour).
+            Hypothèses : PIB 2026 de {hv('pib2026')} Md€, croissance nominale de {fmtPct(hv('croissanceNominale'))} par an, déficit tendanciel de {fmtPct(hv('deficitTendanciel'))} du PIB, dette 2026 de {fmtNombre(hv('dette2026'), 0)} Md€ (source officielle S1 pour le déficit et la dette ; PIB et croissance : ordres de grandeur du modèle d’origine, à mettre à jour).
             L’effet du programme est nul en 2026, égal au solde An 1 en 2027, interpolé en 2028-2029, puis égal au solde d’année pleine dès 2030.
           </p>
           <p>

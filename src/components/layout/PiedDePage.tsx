@@ -7,8 +7,7 @@ export function PiedDePage() {
       <div className="mx-auto max-w-7xl space-y-1 px-4 py-6 text-sm text-ink-soft sm:px-6">
         <p className="font-semibold text-ink">{MENTION_INDEPENDANCE}</p>
         <p>
-          Les montants sont exprimés en milliards d’euros (Md€). Les hypothèses sont explicites et modifiables dans le code source (dossier{' '}
-          <code className="nombre">src/data</code>). Aucune donnée personnelle n’est collectée ; aucune ressource externe n’est chargée.
+          Les montants sont exprimés en milliards d’euros (Md€). Les hypothèses sont explicites. Aucune donnée personnelle n’est collectée ; aucune ressource externe n’est chargée.
         </p>
       </div>
     </footer>

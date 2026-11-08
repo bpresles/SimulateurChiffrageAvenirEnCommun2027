@@ -1,3 +1,5 @@
+import type { Filiere } from '../data/filieres'
+
 export type Horizon = 'an1' | 'anneePleine'
 
 export interface SimulationParams {
@@ -24,6 +26,10 @@ export interface SimulationParams {
 }
 
 export interface ModelOptions {
+  /** Jeu de filières alternatif (tests de non-régression). Par défaut : données actuelles. */
+  filieres?: readonly Filiere[]
+  /** Gain brut du gel BCE (Md€/an) alternatif, pour figer le modèle d'origine (22). */
+  gelBceBrut?: number
   corrections: {
     bonification: boolean
     cades: boolean

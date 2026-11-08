@@ -6,20 +6,22 @@ import { LeviersTab } from './components/leviers/LeviersTab'
 import { MatriceTab } from './components/matrice/MatriceTab'
 import { MethodologieTab } from './components/methodologie/MethodologieTab'
 import { SimulateurTab } from './components/simulateur/SimulateurTab'
+import { useTheme } from './state/useTheme'
 import { useModele } from './state/useModele'
 import { useSimulationParams } from './state/useSimulationParams'
 
 export default function App() {
   const etat = useSimulationParams()
   const modele = useModele(etat.params, etat.rho)
+  const { theme, basculer } = useTheme()
   const horizonLabel = etat.params.horizon === 'an1' ? 'An 1' : 'année pleine'
   const { onglet } = etat
   return (
     <>
-      <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
+      <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:text-ink focus:px-3 focus:py-2">
         Aller au contenu
       </a>
-      <EnTete onglet={onglet} onChange={etat.setOnglet} solde={modele.resultat.solde} horizonLabel={horizonLabel} />
+      <EnTete onglet={onglet} onChange={etat.setOnglet} solde={modele.resultat.solde} horizonLabel={horizonLabel} theme={theme} onBasculerTheme={basculer} />
       <main id="contenu" className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div role="tabpanel" id={idPanneau(onglet)} aria-labelledby={idOnglet(onglet)} tabIndex={0}>
           {onglet === 'simulateur' && <SimulateurTab etat={etat} modele={modele} />}

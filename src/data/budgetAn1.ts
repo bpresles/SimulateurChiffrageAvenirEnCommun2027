@@ -1,4 +1,4 @@
-import type { StatutFiabilite } from './sources'
+import type { SourceId, StatutFiabilite } from './sources'
 
 export interface Fourchette {
   min: number | null
@@ -12,6 +12,7 @@ export interface LigneBudget {
   montant: number
   fourchette?: Fourchette
   statut: StatutFiabilite
+  refs: SourceId[]
   /** Statut de la fourchette quand elle existe. */
   statutFourchette?: StatutFiabilite
   commentaire?: string
@@ -19,19 +20,19 @@ export interface LigneBudget {
 
 export interface PoleBudget {
   nom: string
-  /** Total annoncé pour le pôle. */
+  /** Total annoncé pour le pôle (S1). */
   totalAnnonce: number
   lignes: LigneBudget[]
 }
 
 const dep = (id: string, pole: string, libelle: string, montant: number): LigneBudget => ({
-  id, pole, libelle, montant, statut: 'officiel',
+  id, pole, libelle, montant, statut: 'officiel', refs: ['S1'],
 })
 const rec = (
   id: string, pole: string, libelle: string, montant: number,
   min: number | null, max: number | null, commentaire?: string,
 ): LigneBudget => ({
-  id, pole, libelle, montant, statut: 'officiel',
+  id, pole, libelle, montant, statut: 'officiel', refs: ['S1'],
   fourchette: { min, max }, statutFourchette: 'estimation-externe', commentaire,
 })
 
@@ -72,12 +73,12 @@ export const DEPENSES_AN1: PoleBudget[] = [
 
 export const RECETTES_AN1: PoleBudget[] = [
   {
-    nom: 'Retour sur les baisses d’impôts post-2017', totalAnnonce: 44.0,
+    nom: 'Retour sur les mesures fiscales des mandats Macron', totalAnnonce: 44.0,
     lignes: [
-      rec('r-niches', 'Baisses d’impôts post-2017', 'Niches fiscales et sociales', 22.0, 5.6, 22.0),
-      rec('r-quotient', 'Baisses d’impôts post-2017', 'Quotient conjugal/familial', 10.0, 10.0, 11.0, 'Absent de la matrice du modèle d’origine.'),
-      rec('r-flat', 'Baisses d’impôts post-2017', 'Suppression de la flat tax', 9.0, 4.0, 9.0),
-      rec('r-cvae', 'Baisses d’impôts post-2017', 'CVAE', 3.0, 3.0, 11.0),
+      rec('r-niches', 'Mesures fiscales des mandats Macron', 'Niches fiscales et sociales', 22.0, 5.6, 22.0),
+      rec('r-isf', 'Mesures fiscales des mandats Macron', 'ISF renforcé climatique', 10.0, 5.0, 10.0),
+      rec('r-flat', 'Mesures fiscales des mandats Macron', 'Suppression de la flat tax', 9.0, 4.0, 9.0),
+      rec('r-cvae', 'Mesures fiscales des mandats Macron', 'CVAE', 3.0, 3.0, 11.0),
     ],
   },
   {
@@ -85,13 +86,6 @@ export const RECETTES_AN1: PoleBudget[] = [
     lignes: [
       rec('r-successions', 'Hauts patrimoines', 'Successions et héritage maximum', 20.0, 3.1, 12.5),
       rec('r-zucman', 'Hauts patrimoines', 'Taxe Zucman 2 % au-delà de 100 M€', 15.0, 5.0, 15.0),
-    ],
-  },
-  {
-    nom: 'Ligne isolée (rattachement ambigu)', totalAnnonce: 10.0,
-    lignes: [
-      rec('r-isf', 'Ligne isolée', 'ISF renforcé climatique', 10.0, 5.0, 10.0,
-        'N’entre dans aucun sous-total annoncé ; exclue des 106,4 Md€ utilisés par le moteur.'),
     ],
   },
   {
@@ -114,7 +108,7 @@ export const RECETTES_AN1: PoleBudget[] = [
   },
 ]
 
-/** Fourchette réaliste totale citée pour l'année 1. */
+/** Fourchette réaliste totale citée pour l'année 1 (estimation externe, non vérifiée). */
 export const FOURCHETTE_REALISTE_RECETTES_AN1: Fourchette = { min: 55, max: 85 }
 
 export const sommeLignes = (poles: PoleBudget[]): number =>

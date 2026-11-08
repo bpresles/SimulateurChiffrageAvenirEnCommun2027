@@ -1,5 +1,6 @@
 import type { Fourchette } from './budgetAn1'
-import type { StatutFiabilite } from './sources'
+import { HYPOTHESES } from './hypotheses'
+import type { SourceId, StatutFiabilite } from './sources'
 
 export type CleLevier = 'gelBce' | 'primaireBce' | 'circuitTresor' | 'cades'
 
@@ -13,6 +14,14 @@ export interface ComposanteLevier {
 export interface OrdreGrandeur {
   libelle: string
   valeur: string
+  /** Sources officielles ; sans référence, l'ordre de grandeur reste à vérifier. */
+  refs?: SourceId[]
+}
+
+export interface BadgeJuridique {
+  texte: string
+  /** « bce » : décision ou modification institutionnelle requise ; « programme » : simple mesure du programme. */
+  ton: 'bce' | 'programme'
 }
 
 export interface Levier {
@@ -24,10 +33,13 @@ export interface Levier {
   fourchette: Fourchette
   statutMontant: StatutFiabilite
   mecanisme: string
+  /** Limites propres au levier, affichées sur sa carte. */
+  limites?: string[]
   decomposition: ComposanteLevier[]
   cadreJuridique: string
-  /** Vrai si le levier requiert une évolution des traités ou un accord BCE. */
-  necessiteBce: boolean
+  badgeJuridique: BadgeJuridique
+  /** Sources officielles du montant brut. */
+  refsMontant?: SourceId[]
   /** Façon dont le moteur compte ce levier après correction. */
   comptageMoteur: string
   /** Comptage du modèle d'origine, pour comparaison. */
@@ -35,50 +47,56 @@ export interface Levier {
   ordresGrandeur: OrdreGrandeur[]
 }
 
-export const BADGE_BCE = 'Nécessite une évolution des traités ou un accord BCE (art. 123 TFUE)'
 
 export const LEVIERS: Levier[] = [
   {
     id: 'gelBce', numero: 1,
     titre: 'Gel ou conversion en dette perpétuelle à 0 % du stock détenu par la BCE, et fin des OATi',
-    montantBrut: 22, fourchette: { min: 0, max: 22 }, statutMontant: 'hypothese-non-sourcee',
+    montantBrut: HYPOTHESES.gelBce.valeur, fourchette: { min: 0, max: HYPOTHESES.gelBce.valeur }, statutMontant: 'hypothese-non-sourcee',
     mecanisme:
-      'Selon le programme, les titres publics français détenus par la Banque de France et l’Eurosystème à la suite des programmes d’achats d’actifs seraient gelés ou convertis en dette perpétuelle à 0 %, et les titres indexés sur l’inflation (OATi) seraient arrêtés ou convertis. L’économie porte sur les intérêts versés.',
+      'Selon le programme (S1, S6), la BCE serait invitée à annuler ou transformer en dettes perpétuelles à taux nul la part de dette publique française qu’elle détient, et l’émission d’OATi (titres indexés sur l’inflation) prendrait fin. La fin des OATi porte sur les nouvelles émissions : le gain est progressif. L’économie porte sur les intérêts versés.',
     decomposition: [
-      { libelle: 'Intérêts économisés sur le stock détenu par la BCE (~750 Md€)', montant: 18.5 },
-      { libelle: 'Arrêt et conversion des OATi', montant: 3.5 },
+      { libelle: 'Intérêts économisés sur le stock détenu par la Banque de France (597,0 Md€ au 31/10/2026, S8 + S9, × taux implicite : hypothèse non sourcée)', montant: HYPOTHESES.gelBceInterets.valeur },
+      { libelle: 'Fin des OATi (nouvelles émissions ; hypothèse non sourcée)', montant: HYPOTHESES.gelBceOati.valeur },
       { libelle: 'Effet sur le ratio dette/PIB comptable en cas d’extinction du stock', montant: null, texte: 'Voir remarque sur la dette au sens de Maastricht.' },
     ],
+    limites: [
+      'Le stock baisse chaque année (titres échus non réinvestis) : le gain d’un gel diminue donc avec le temps, ce que le modèle « année pleine » ne représente pas.',
+      'Une partie des intérêts perçus par la Banque de France revient à l’État via ses bénéfices ; le gain net pour les finances publiques peut être inférieur au gain brut affiché.',
+    ],
     cadreJuridique:
-      'Une conversion en dette perpétuelle ou une annulation des titres détenus par l’Eurosystème se heurte à l’article 123 TFUE (financement monétaire) et exige une évolution des traités ou un accord au Conseil des gouverneurs de la BCE. Une conversion en dette perpétuelle ne réduit pas la dette au sens de Maastricht.',
-    necessiteBce: true,
-    comptageMoteur: 'Compté intégralement (22 Md€ × part activée) en année pleine uniquement, comme gain d’intérêts sur le solde. Aucune correction appliquée.',
+      'Nécessite une décision de la BCE. Selon le programme (S1), pas de révision des traités nécessaire. Une conversion en dette perpétuelle ne réduit pas la dette au sens de Maastricht.',
+    badgeJuridique: { texte: 'Nécessite une décision de la BCE. Selon le programme (S1), pas de révision des traités nécessaire.', ton: 'bce' },
+    comptageMoteur: 'Compté intégralement (gain brut calculé d’environ 18,2 Md€ × part activée) en année pleine uniquement, comme gain d’intérêts sur le solde. Le gain brut est recalé au prorata du stock détenu (597,0 Md€ au 31/10/2026) ; le modèle d’origine retenait 22 Md€. Aucune autre correction appliquée.',
     comptageOrigine: 'Identique.',
     ordresGrandeur: [
-      { libelle: 'Part de la dette détenue par l’Eurosystème', valeur: '21 à 25 % (~750 à 850 Md€), à vérifier' },
-      { libelle: 'Charge d’intérêts de la dette publique', valeur: '~70 Md€/an, à vérifier' },
-      { libelle: 'Dette publique', valeur: '~3 595 Md€ (118 % du PIB), à vérifier' },
+      { libelle: 'Titres publics français détenus par l’Eurosystème', valeur: '597,0 Md€ au 31/10/2026 (PSPP 359,5 + PEPP 237,5), contre 663,1 Md€ au 31/12/2025', refs: ['S8', 'S9'] },
+      { libelle: 'Banque de France, ses seuls avoirs, en coût amorti', valeur: '488 Md€ au 30/06/2026', refs: ['S7'] },
+      { libelle: 'Dette détenue selon le programme (S1)', valeur: '600 Md€ (18 % de la dette), diminués de 80 Md€ en 2026, soit 13 % de la dette en 2027 ; ces 600 Md€ correspondent à la série BCE au 30/06/2026 (600,6 Md€)', refs: ['S1'] },
+      { libelle: 'Charge d’intérêts de la dette publique', valeur: '2,9 % du PIB en 2027', refs: ['S1'] },
+      { libelle: 'Dette publique', valeur: '3 595 Md€ en 2026', refs: ['S1'] },
     ],
   },
   {
     id: 'primaireBce', numero: 2,
-    titre: 'Emprunt direct à la banque centrale sur le marché primaire à 0 %',
+    titre: 'Financement direct des États par la banque centrale (sans passer par les banques privées)',
     montantBrut: 14.5, fourchette: { min: 0, max: 14.5 }, statutMontant: 'hypothese-non-sourcee',
     mecanisme:
-      'Aujourd’hui, l’État emprunte par l’intermédiaire des spécialistes en valeurs du Trésor (SVT) à des taux de l’ordre de 3 %. Selon le programme, la banque centrale financerait directement à 0 % la transition écologique et le Pôle public bancaire. Le Pôle prêterait alors à 0 % sans que l’État ait à subventionner l’écart (bonification).',
+      'Selon le programme (S6), il s’agit de proposer la modification du TFUE et du statut de la BCE pour lui permettre d’acheter de la dette publique sans passer par les banques privées, en mettant notamment en place une autorisation de découvert des États. Selon S4, le pôle public bancaire se refinancerait auprès de la BCE « comme le font toutes les banques dans le cadre des traités ». Hypothèse du modèle (non sourcée) : ce canal fournirait un financement à 0 % de la transition écologique et du pôle, de sorte que le pôle prêterait à 0 % sans bonification de l’État.',
     decomposition: [
-      { libelle: 'Suppression du coût de bonification des prêts à 0 % du Pôle bancaire', montant: 8.0 },
-      { libelle: 'Financement primaire à 0 % des investissements publics', montant: 6.5 },
-      { libelle: 'Escompte à 0 % pour les investissements verts des PME/TPE', montant: null, texte: 'Crédit sélectif, non chiffré.' },
+      { libelle: 'Suppression du coût de bonification des prêts à 0 % du pôle (hypothèse du modèle, non sourcée)', montant: 8.0 },
+      { libelle: 'Financement à 0 % des investissements publics (hypothèse du modèle, non sourcée)', montant: 6.5 },
+      { libelle: 'Escompte à taux zéro pour les TPE-PME par le pôle public bancaire (S6)', montant: null, texte: 'Mesure du programme, non chiffrée.' },
     ],
     cadreJuridique:
-      'Le financement monétaire direct des États est interdit par l’article 123 TFUE. Le levier suppose une évolution des traités ou un accord de la BCE.',
-    necessiteBce: true,
+      'Le financement monétaire direct des États est interdit par l’article 123 TFUE. Le programme (S6) propose de modifier le TFUE et le statut de la BCE pour lui permettre d’acheter de la dette publique sans passer par les banques privées, avec une autorisation de découvert des États.',
+    badgeJuridique: { texte: 'Nécessite une modification du TFUE et des statuts de la BCE, proposée par le programme (S6).', ton: 'bce' },
     comptageMoteur:
       'Seuls les 6,5 Md€ de financement à 0 % sont comptés en gain. Les 8 Md€ de bonification sont une friction du modèle : sans le levier le Pôle prête à 0 % et l’État paie la bonification ; avec le levier cette friction disparaît. La compter aussi comme gain serait un double compte. Le gain total de passer de 0 à 100 % est donc 6,5 Md€ plus la friction de bonification évitée.',
     comptageOrigine: '14,5 Md€ comptés en gain, et la bonification également comptée en friction quand le levier est partiel.',
     ordresGrandeur: [
-      { libelle: 'Taux de refinancement via les SVT', valeur: '3,1 à 3,5 %, à vérifier' },
+      { libelle: 'Taux de refinancement via les spécialistes en valeurs du Trésor (SVT)', valeur: '3,1 à 3,5 % (hypothèse du modèle, à vérifier)' },
+      { libelle: 'Pôle public bancaire', valeur: 'Équilibre financier affirmé par le programme : le coût de bonification est une hypothèse de modélisation', refs: ['S4'] },
     ],
   },
   {
@@ -86,38 +104,39 @@ export const LEVIERS: Levier[] = [
     titre: 'Rétablissement d’un « circuit du Trésor » (modèle d’après-guerre modernisé)',
     montantBrut: 8.5, fourchette: { min: 4, max: 10 }, statutMontant: 'hypothese-non-sourcee',
     mecanisme:
-      'Selon le programme, l’État organiserait un circuit de collecte de l’épargne nationale pour réduire sa dépendance aux marchés : planchers obligatoires de bons du Trésor pour les banques, centralisation accrue du Livret A à la Caisse des Dépôts, orientation d’une part de l’assurance-vie vers des titres publics de transition.',
+      'Selon le programme, il s’agit de « réinstaurer un circuit du Trésor pour sortir la dette publique de la main des marchés financiers » (S6), dans une « version modernisée en s’appuyant sur le pôle public bancaire et les acteurs financiers qui opèrent en France » (S1). Hypothèses du modèle (non sourcées) : planchers obligatoires de bons du Trésor pour les banques et orientation d’une part de l’assurance-vie vers des titres publics.',
     decomposition: [
-      { libelle: 'Planchers obligatoires d’effets publics', montant: 5.5 },
-      { libelle: 'Orientation d’une part de l’assurance-vie', montant: 3.0 },
-      { libelle: 'Centralisation accrue du Livret A/B', montant: null, texte: 'Flux de l’ordre de 100 Md€/an, non compté comme gain budgétaire.' },
-      { libelle: 'Neutralisation de la prime de risque obligataire', montant: null, texte: 'Représentée par la friction de spread (11 Md€ sans le levier).' },
+      { libelle: 'Planchers obligatoires d’effets publics (hypothèse du modèle, non sourcée)', montant: 5.5 },
+      { libelle: 'Orientation d’une part de l’assurance-vie (hypothèse du modèle, non sourcée)', montant: 3.0 },
+      { libelle: 'Centralisation accrue du Livret A', montant: null, texte: 'Ressource du pôle public bancaire (S4), non comptée comme gain budgétaire.' },
+      { libelle: 'Neutralisation de la prime de risque obligataire (hypothèse du modèle)', montant: null, texte: 'Représentée par la friction de spread (11 Md€ sans le levier).' },
     ],
     cadreJuridique:
       'Largement de niveau national (réglementation bancaire et épargne réglementée), mais soumis au droit européen sur la libre circulation des capitaux et à la supervision prudentielle. Validation juridique requise.',
-    necessiteBce: false,
+    badgeJuridique: { texte: 'Mesure du programme (S6)', ton: 'programme' },
     comptageMoteur: 'Gain de 8,5 Md€ × part activée (moitié en An 1) ; sans le levier, une friction de spread de 11 Md€ × (1 − part activée) est comptée en année pleine.',
     comptageOrigine: 'Identique.',
     ordresGrandeur: [
-      { libelle: 'Encours d’épargne financière des ménages', valeur: '~6 000 Md€, à vérifier' },
+      { libelle: 'Épargne des ménages', valeur: '6 600 Md€ selon S1 (6 500 Md€ selon S4)', refs: ['S1', 'S4'] },
     ],
   },
   {
     id: 'cades', numero: 4,
     titre: 'Arrêt de l’amortissement accéléré de la dette sociale par la CADES',
-    montantBrut: 19, fourchette: { min: 9.5, max: 19 }, statutMontant: 'hypothese-non-sourcee',
+    montantBrut: 19, fourchette: { min: 9.5, max: 19 }, statutMontant: 'officiel', refsMontant: ['S6'],
     mecanisme:
-      'La CADES affecte aujourd’hui environ 19 Md€ par an de CRDS et de CSG à l’amortissement de la dette sociale. Selon le programme, ce flux serait réaffecté à l’Assurance maladie et aux retraites, et la dette sociale serait maintenue au sein de la dette publique générale.',
+      'Selon le programme (S6), il faut « réformer la Caisse d’amortissement de la dette sociale (Cades), qui prive la Sécurité sociale de 19 milliards d’euros par an ». Hypothèse du modèle (non sourcée) : ce flux de CRDS et de CSG serait réaffecté à l’Assurance maladie et aux retraites.',
     decomposition: [
-      { libelle: 'Réaffectation du flux CRDS/CSG vers l’Assurance maladie et la CNAV', montant: 19.0 },
-      { libelle: 'Part du coût de la retraite à 60 ans couverte (selon le programme)', montant: null, texte: 'Environ 48 %, non vérifié.' },
+      { libelle: 'Montant que la Cades prélève sur la Sécurité sociale (S6) ; réaffectation à l’Assurance maladie et aux retraites : hypothèse du modèle', montant: 19.0 },
     ],
     cadreJuridique:
       'Relève de la loi organique relative aux lois de financement de la Sécurité sociale, votée par le Parlement.',
-    necessiteBce: false,
+    badgeJuridique: { texte: 'Mesure du programme (S6)', ton: 'programme' },
     comptageMoteur:
-      'Par défaut, 0 dans le solde consolidé : la CRDS est déjà une recette de la trajectoire de base. La réaffecter ne crée pas de recette publique, elle arrête seulement l’amortissement de la dette. C’est un gain pour la Sécurité sociale, pas pour le solde consolidé. Une option permet de la compter quand même.',
+      'Par défaut, la réaffectation (19 Md€ × part activée) est comptée dans le solde, comme le chiffre le programme (S6). En lecture APU consolidée, la CRDS est déjà une recette de la trajectoire de base : la réaffecter n’ajoute pas de recette publique mais arrête l’amortissement de la dette, c’est un gain pour la Sécurité sociale. Décocher l’option « Compter la réaffectation CADES » applique cette lecture (0 dans le solde).',
     comptageOrigine: '19 Md€ comptés comme gain du solde public consolidé.',
-    ordresGrandeur: [],
+    ordresGrandeur: [
+      { libelle: 'Montant que la CADES prélève sur la Sécurité sociale', valeur: '19 Md€/an', refs: ['S6'] },
+    ],
   },
 ]

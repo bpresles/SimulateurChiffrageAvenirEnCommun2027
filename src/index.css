@@ -2,6 +2,8 @@
 @import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/jetbrains-mono';
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme {
   --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
@@ -22,10 +24,12 @@
   --color-info: #2b5fa8;
   --color-info-soft: #e3edfa;
   --color-neutre-soft: #ebeef2;
+  --color-entete: #1e3a5f;
+  --color-on-brand: #ffffff;
+  --color-serie-2: #5a82b8;
 }
 
 @layer base {
-  html { color-scheme: light; }
   body {
     background: var(--color-surface-alt);
     color: var(--color-ink);
@@ -47,4 +51,28 @@
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
+}
+
+html[data-theme='light'] { color-scheme: light; }
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --color-ink: #e6ebf2;
+  --color-ink-soft: #a9b4c3;
+  --color-surface: #161d29;
+  --color-surface-alt: #0e131b;
+  --color-line: #2f3a4b;
+  --color-brand: #8db4ea;
+  --color-brand-soft: #1d2c44;
+  --color-positif: #4cc2a5;
+  --color-positif-soft: #12332d;
+  --color-negatif: #ff8f82;
+  --color-negatif-soft: #3d1a17;
+  --color-attention: #f0b85a;
+  --color-attention-soft: #3a2c0d;
+  --color-info: #7fb0f0;
+  --color-info-soft: #1a2c47;
+  --color-neutre-soft: #232c3a;
+  --color-entete: #101a29;
+  --color-on-brand: #0e1624;
+  --color-serie-2: #e0a85c;
 }

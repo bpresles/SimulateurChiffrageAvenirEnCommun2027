@@ -19,18 +19,26 @@ interface Props {
   series: Serie[]
   unite: string
   decimales?: number
+  /** Domaine minimal de l'axe Y ; il est étendu aux entiers suivants si les données le dépassent. */
+  domaine?: [number, number]
+  /** Pas de graduation de l'axe Y (sinon automatique). */
+  pasGraduation?: number
 }
 
 const H = 260, L = 44, R = 14, T = 20, B = 30
 
-export function Courbes({ titre, description, annees, series, unite, decimales = 1 }: Props) {
+export function Courbes({ titre, description, annees, series, unite, decimales = 1, domaine, pasGraduation }: Props) {
   const id = useId()
   const [ref, W] = useLargeurConteneur<HTMLDivElement>()
   const toutes = series.flatMap((s) => s.valeurs.filter((v): v is number => v !== null))
-  const [lo, hi] = bornes(toutes, 0.1)
+  const [lo, hi] = domaine
+    ? [Math.min(domaine[0], Math.floor(Math.min(...toutes))), Math.max(domaine[1], Math.ceil(Math.max(...toutes)))]
+    : bornes(toutes, 0.1)
   const x = echelle(annees[0], annees[annees.length - 1], L, W - R)
   const y = echelle(lo, hi, H - B, T)
-  const ticks = graduations(lo, hi, 5)
+  const ticks = pasGraduation
+    ? Array.from({ length: Math.floor((hi - lo) / pasGraduation) + 1 }, (_, i) => lo + i * pasGraduation)
+    : graduations(lo, hi, 5)
   // Décimales des graduations : 1 si le pas est fractionnaire (ex. 0,5), sinon 0.
   const decTicks = ticks.length > 1 && !Number.isInteger(Math.round((ticks[1] - ticks[0]) * 1e9) / 1e9) ? 1 : 0
   return (
@@ -42,7 +50,7 @@ export function Courbes({ titre, description, annees, series, unite, decimales =
         <desc id={`${id}-d`}>{description}</desc>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="var(--color-line)" strokeWidth={1} />
+            <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={domaine && t === 0 ? 'var(--color-ink-soft)' : 'var(--color-line)'} strokeWidth={domaine && t === 0 ? 1.5 : 1} />
             <text x={L - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--color-ink-soft)">{fmtNombre(t, decTicks)}</text>
           </g>
         ))}

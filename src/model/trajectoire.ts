@@ -29,7 +29,7 @@ export function calculerTrajectoire(effetAn1: number, effetAP: number, gelPct: n
   const pib0 = hv('pib2026')
   const g = hv('croissanceNominale') / 100
   const def = hv('deficitTendanciel') / 100
-  let dettePrec = (hv('dettePib2026') / 100) * pib0
+  let dettePrec = hv('dette2026')
   return ANNEES.map((annee) => {
     const pib = pib0 * Math.pow(1 + g, annee - 2026)
     const solde = def * pib + effetProgramme(annee, effetAn1, effetAP)

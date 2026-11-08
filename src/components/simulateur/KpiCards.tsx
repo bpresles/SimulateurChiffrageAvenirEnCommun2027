@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LIBELLE_POLE } from '../../data/filieres'
 import { fmtEmplois, fmtMd, fmtPct } from '../../lib/format'
 import type { Modele } from '../../state/useModele'
 import type { SimulationParams } from '../../model/types'
@@ -38,7 +39,7 @@ export function KpiCards({ modele, params }: { modele: Modele; params: Simulatio
         </p>
       </Kpi>
       <Kpi titre="Investissements" valeur={fmtMd(r.agregat.totalInvest)} statut="hypothese-non-sourcee">
-        <p>{fmtMd(r.agregat.totalEtat)} État + {fmtMd(r.agregat.totalBanque)} Pôle bancaire</p>
+        <p>{fmtMd(r.agregat.totalEtat)} État + {fmtMd(r.agregat.totalBanque)} {LIBELLE_POLE}</p>
         <p>Intervalle Monte-Carlo P10–P90 du total : <strong className="nombre text-ink">{fmtMd(mc.investissement.p10)} à {fmtMd(mc.investissement.p90)}</strong>{stale}</p>
       </Kpi>
       <Kpi titre="Retours des filières" valeur={fmtMd(r.retoursFilieres, { signe: true })} statut="hypothese-non-sourcee">

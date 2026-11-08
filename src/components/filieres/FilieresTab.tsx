@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { FILIERES, type Filiere } from '../../data/filieres'
+import { FILIERES, LIBELLE_POLE, type Filiere } from '../../data/filieres'
 import { fmtEmplois, fmtMd, fmtNombre } from '../../lib/format'
 import { agregerFilieres } from '../../model/filieres'
 import type { SimulationParams } from '../../model/types'
 import type { Modele } from '../../state/useModele'
 import { BarresFilieres } from '../charts/BarresFilieres'
 import { Histogramme } from '../charts/Histogramme'
+import { NOTE_SECTEURS } from '../../data/poleBancaire'
 import { Badge } from '../ui/Badge'
+import { RefSources } from '../ui/RefSources'
 import { Carte } from '../ui/Carte'
 import { Segmented } from '../ui/Segmented'
 
@@ -26,7 +28,7 @@ function CarteFiliere({ f, d }: { f: Filiere; d: ReturnType<typeof agregerFilier
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         <dt className="text-ink-soft">Investissement</dt>
         <dd className="nombre font-semibold">{fmtMd(d.invest, { decimales: 2 })}</dd>
-        <dt className="text-ink-soft">État / Pôle bancaire</dt>
+        <dt className="text-ink-soft">État / {LIBELLE_POLE}</dt>
         <dd className="nombre">{fmtNombre(d.etat, 2)} / {fmtNombre(d.banque, 2)}</dd>
         <dt className="text-ink-soft">Fourchette P10–P90</dt>
         <dd className="nombre">{fmtNombre(f.p10, 2)} à {fmtNombre(f.p90, 2)}</dd>
@@ -41,8 +43,11 @@ function CarteFiliere({ f, d }: { f: Filiere; d: ReturnType<typeof agregerFilier
       </dl>
       <p className="text-xs text-ink-soft"><strong>Cibles :</strong> {f.cibles}</p>
       {f.note && <p className="text-xs text-ink-soft">{f.note}</p>}
-      <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
+      {f.statut === 'estime' && <p className="text-xs text-ink-soft">Le secteur est cité par le programme (S1, S4) ; les montants sont des hypothèses non sourcées.</p>}
+      {f.axes && <p className="text-xs text-ink-soft">Détail par axe du livret : onglet « Matrice détaillée ».</p>}
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
         <Badge statut={f.statutInvestissement} />
+        <RefSources refs={f.statutInvestissement === 'officiel' ? f.refs : undefined} />
         <Badge statut={f.statutRoi} />
       </div>
     </article>
@@ -61,8 +66,8 @@ export function FilieresTab({ params, modele }: { params: SimulationParams; mode
       <Carte titre="Investissement productif : 10 filières">
         <p className="mb-3 max-w-4xl text-sm text-ink-soft">
           Pour chaque filière, trois valeurs sont fournies (P10, P50, P90). Le sélecteur ci-dessous applique le même percentile à toutes les filières, par
-          interpolation linéaire entre ces points : ce n’est pas une simulation. Les 2 filières « publiées » reposent sur des livrets ; les 8 autres, ainsi
-          que tous les retours sectoriels, ont été estimés avec un assistant IA et ne sont pas sourcés.
+          interpolation linéaire entre ces points : ce n’est pas une simulation. Les 2 filières « publiées » reposent sur les livrets officiels (S2, S3) ; les 8 autres, ainsi
+          que tous les retours sectoriels, ont été estimés avec un assistant IA et ne sont pas sourcés. {NOTE_SECTEURS}
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <Segmented<10 | 50 | 90>
@@ -82,7 +87,7 @@ export function FilieresTab({ params, modele }: { params: SimulationParams; mode
           {[
             ['Total investi', fmtMd(agregat.totalInvest)],
             ['Dont État', fmtMd(agregat.totalEtat)],
-            ['Dont Pôle bancaire', fmtMd(agregat.totalBanque)],
+            [`Dont ${LIBELLE_POLE}`, fmtMd(agregat.totalBanque)],
             ['Emplois (hypothèse)', fmtEmplois(agregat.totalEmplois).replace(/\u00a0emplois$/, '')],
           ].map(([t, v]) => (
             <div key={t} className="rounded-lg bg-surface-alt p-3">
