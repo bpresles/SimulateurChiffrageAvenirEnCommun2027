@@ -1,3 +1,4 @@
+import { hv } from '../data/hypotheses'
 import { SCENARIOS, type CleScenario } from '../data/scenarios'
 import type { SimulationParams } from './types'
 
@@ -32,4 +33,25 @@ export function reconnaitrePreset(params: SimulationParams): PresetReconnu | nul
     if (aUneVariante(s.cle) && memeParams(sansLeviers(s.params), params)) return { cle: s.cle, sansLeviers: true }
   }
   return null
+}
+
+/** Égalité stricte de tous les paramètres (y compris croissance et bonification). */
+export const memeParamsStrict = (a: SimulationParams, b: SimulationParams): boolean =>
+  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => a[k] === b[k])
+
+export interface ReglagesReference {
+  cle: CleScenario
+  sansLeviers: boolean
+  params: SimulationParams
+  rho: number
+}
+
+/**
+ * Réglages de référence pour la réinitialisation : le dernier préréglage choisi (« complet » à défaut)
+ * dans la variante donnée, avec les hypothèses avancées à leurs valeurs par défaut
+ * (retours courants 14, ρ 0,5, croissance 2,5 %, bonification 0 %, CADES comptée).
+ */
+export function parametresDeReinitialisation(dernierPreset: CleScenario | null | undefined, sans: boolean): ReglagesReference {
+  const cle = dernierPreset ?? 'complet'
+  return { cle, sansLeviers: sans && aUneVariante(cle), params: paramsPreset(cle, sans), rho: hv('rho') }
 }

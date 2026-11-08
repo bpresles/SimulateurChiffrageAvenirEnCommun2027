@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { SCENARIOS } from '../data/scenarios'
-import { CLES_AVEC_VARIANTE, paramsPreset, reconnaitrePreset } from './presets'
+import { CLES_AVEC_VARIANTE, memeParamsStrict, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from './presets'
 import { simuler } from './simulate'
 
 describe('variantes sans leviers monétaires', () => {
@@ -47,5 +47,42 @@ describe('variantes sans leviers monétaires', () => {
     const p = paramsPreset('complet', false)
     expect(reconnaitrePreset({ ...p, percentile: 55 })).toBeNull()
     expect(reconnaitrePreset({ ...p, croissanceNominalePct: 1 })).toEqual({ cle: 'complet', sansLeviers: false })
+  })
+})
+
+describe('réinitialisation des réglages', () => {
+  it('restaure le préréglage et la variante, avec les hypothèses avancées par défaut', () => {
+    for (const cle of CLES_AVEC_VARIANTE)
+      for (const sans of [false, true]) {
+        const r = parametresDeReinitialisation(cle, sans)
+        expect(r.cle).toBe(cle)
+        expect(r.sansLeviers).toBe(sans)
+        expect(memeParamsStrict(r.params, paramsPreset(cle, sans))).toBe(true)
+        expect(r.params.retoursCourantsBase).toBe(14)
+        expect(r.params.croissanceNominalePct).toBe(2.5)
+        expect(r.params.tauxBonificationPct).toBe(0)
+        expect(r.params.cadesCompteDansSolde).toBe(true)
+        expect(r.rho).toBe(0.5)
+        expect(reconnaitrePreset(r.params)).toEqual({ cle, sansLeviers: sans })
+      }
+  })
+  it('l’horizon revient à celui du préréglage', () => {
+    expect(parametresDeReinitialisation('an1', false).params.horizon).toBe('an1')
+    expect(parametresDeReinitialisation('haut', false).params.horizon).toBe('anneePleine')
+  })
+  it('replie sur « complet » (avec leviers) sans préréglage connu', () => {
+    const r = parametresDeReinitialisation(null, false)
+    expect(r.cle).toBe('complet')
+    expect(memeParamsStrict(r.params, paramsPreset('complet', false))).toBe(true)
+    expect(parametresDeReinitialisation(undefined, false).cle).toBe('complet')
+  })
+  it('un préréglage sans variante ignore l’interrupteur', () => {
+    const r = parametresDeReinitialisation('stress', true)
+    expect(r.sansLeviers).toBe(false)
+    expect(memeParamsStrict(r.params, paramsPreset('stress', false))).toBe(true)
+  })
+  it('détecte un écart avec la référence (croissance modifiée)', () => {
+    const ref = parametresDeReinitialisation('complet', false)
+    expect(memeParamsStrict({ ...ref.params, croissanceNominalePct: 1 }, ref.params)).toBe(false)
   })
 })

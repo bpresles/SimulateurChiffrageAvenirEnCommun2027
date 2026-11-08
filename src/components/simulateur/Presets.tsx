@@ -1,6 +1,7 @@
 import { SCENARIOS, type CleScenario } from '../../data/scenarios'
 import { fmtMd } from '../../lib/format'
 import { aUneVariante } from '../../model/presets'
+import { BoutonReinitialiser } from '../ui/BoutonReinitialiser'
 import { Segmented } from '../ui/Segmented'
 
 interface Props {
@@ -10,11 +11,13 @@ interface Props {
   soldesSans: Record<CleScenario, number>
   onChoisir: (c: CleScenario) => void
   onChangerLeviers: (sans: boolean) => void
+  onReinitialiser: () => void
+  reinitialisable: boolean
 }
 
 const ton = (v: number) => (v >= 0 ? 'text-positif' : 'text-negatif')
 
-export function Presets({ actif, sansLeviers, soldes, soldesSans, onChoisir, onChangerLeviers }: Props) {
+export function Presets({ actif, sansLeviers, soldes, soldesSans, onChoisir, onChangerLeviers, onReinitialiser, reinitialisable }: Props) {
   const libelleActif = (() => {
     if (actif === 'personnalise') return null
     const base = SCENARIOS.find((s) => s.cle === actif)!.libelle
@@ -38,6 +41,7 @@ export function Presets({ actif, sansLeviers, soldes, soldesSans, onChoisir, onC
         ) : (
           <span className="text-xs text-ink-soft">Actif : <strong className="text-ink">{libelleActif}</strong></span>
         )}
+        <BoutonReinitialiser onClick={onReinitialiser} actif={reinitialisable} />
       </div>
       <p className="mb-3 text-xs text-ink-soft">
         « Sans » met à 0 le gel BCE, l’emprunt primaire et le circuit du Trésor ; les autres paramètres sont inchangés. La CADES est conservée : c’est une mesure budgétaire nationale sourcée (S6), qui ne dépend ni de la BCE ni des marchés.
