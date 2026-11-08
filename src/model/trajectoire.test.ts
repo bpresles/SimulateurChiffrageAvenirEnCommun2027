@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { SCENARIOS } from '../data/scenarios'
 import { simuler } from './simulate'
-import { calculerTrajectoire, effetProgramme, trajectoiresPourParams } from './trajectoire'
+import { ameliorationDeficit2030, calculerTrajectoire, effetProgramme, trajectoiresPourParams } from './trajectoire'
 
 describe('trajectoire', () => {
   it('le tendanciel garde un déficit de 5,4 % du PIB', () => {
@@ -40,19 +40,34 @@ describe('croissance nominale réglable', () => {
   })
 })
 
-describe('indexation de l’effet du programme sur le PIB nominal', () => {
+describe('effet du programme en euros 2027 (non indexé)', () => {
   const effetAn1 = 10, effetAP = 40
-  it('croissance nulle : identique à la trajectoire non indexée', () => {
-    const t = calculerTrajectoire(effetAn1, effetAP, 0, 0)
-    for (const p of t) {
-      expect(p.solde).toBeCloseTo(-0.054 * 3000 + effetProgramme(p.annee, effetAn1, effetAP), 9)
+  it('l’effet 2030 vaut l’effet année pleine, quelle que soit la croissance', () => {
+    for (const g of [0, 1, 2.5, 5]) {
+      const prog = calculerTrajectoire(effetAn1, effetAP, 0, g)
+      const tend = calculerTrajectoire(0, 0, 0, g)
+      expect(prog[4].solde - tend[4].solde).toBeCloseTo(effetAP, 9)
+      expect(prog[1].solde - tend[1].solde).toBeCloseTo(effetAn1, 9)
     }
   })
-  it('croissance 2,5 % : effet 2030 = effet année pleine × 1,025³', () => {
-    const prog = calculerTrajectoire(effetAn1, effetAP, 0, 2.5)
-    const tend = calculerTrajectoire(0, 0, 0, 2.5)
-    const effet2030 = prog[4].solde - tend[4].solde
-    expect(effet2030).toBeCloseTo(effetAP * Math.pow(1.025, 3), 9)
-    expect(prog[1].solde - tend[1].solde).toBeCloseTo(effetAn1, 9)
+})
+
+describe('amélioration du déficit 2030 en points de PIB', () => {
+  it('Z = effet / PIB 2030 × 100, déficit tendanciel 5,4 %', () => {
+    const base = SCENARIOS.find((s) => s.cle === 'complet')!.params
+    const r = ameliorationDeficit2030(trajectoiresPourParams(base))
+    const pib2030 = 3000 * Math.pow(1.025, 4)
+    const effetAP = simuler({ ...base, horizon: 'anneePleine' }).solde
+    expect(r.effet).toBeCloseTo(effetAP, 9)
+    expect(r.pointsPib).toBeCloseTo((effetAP / pib2030) * 100, 9)
+    expect(r.deficitTendanciel).toBeCloseTo(5.4, 9)
+    expect(r.suffisant).toBe(false)
+  })
+  it('à croissance nulle, Z = effet / 3000 ; un effet très favorable annule le déficit', () => {
+    const base = SCENARIOS.find((s) => s.cle === 'complet')!.params
+    const r = ameliorationDeficit2030(trajectoiresPourParams({ ...base, croissanceNominalePct: 0 }))
+    expect(r.pointsPib).toBeCloseTo((r.effet / 3000) * 100, 9)
+    const fort = ameliorationDeficit2030({ ...trajectoiresPourParams(base), programme: calculerTrajectoire(0, 400, 0, 2.5), tendanciel: calculerTrajectoire(0, 0, 0, 2.5), effetAn1: 0, effetAP: 400 })
+    expect(fort.suffisant).toBe(true)
   })
 })

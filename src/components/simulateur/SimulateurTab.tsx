@@ -1,4 +1,4 @@
-import { fmtNombre, fmtPct } from '../../lib/format'
+import { fmtMd, fmtNombre, fmtPct } from '../../lib/format'
 import type { Modele } from '../../state/useModele'
 import type { useSimulationParams } from '../../state/useSimulationParams'
 import { Cascade } from '../charts/Cascade'
@@ -9,11 +9,30 @@ import { CurseursEconomie, CurseursLeviers } from './Curseurs'
 import { HypothesesAvancees } from './HypothesesAvancees'
 import { KpiCards } from './KpiCards'
 import { Presets } from './Presets'
-import { ANNEES } from '../../model/trajectoire'
+import { ANNEES, ameliorationDeficit2030, type Trajectoires } from '../../model/trajectoire'
 import type { Horizon } from '../../model/types'
 import { hv } from '../../data/hypotheses'
 
 type Etat = ReturnType<typeof useSimulationParams>
+
+function NoteDeficit({ t }: { t: Trajectoires }) {
+  const { deficitTendanciel, effet, pointsPib, suffisant } = ameliorationDeficit2030(t)
+  const z = fmtNombre(Math.abs(pointsPib), 1)
+  const unite = Math.abs(pointsPib) < 2 ? 'point' : 'points'
+  const debut = (
+    <>
+      Le solde du programme est mesuré par rapport à la trajectoire sans réforme : un solde positif réduit le déficit sans le supprimer. En 2030, le déficit tendanciel est de {fmtPct(deficitTendanciel)} du PIB ; dans le scénario actif, le programme{' '}
+    </>
+  )
+  if (suffisant)
+    return <>{debut}l’améliore de {z} {unite} de PIB, soit plus que le déficit tendanciel : le solde public devient excédentaire.</>
+  return (
+    <>
+      {debut}
+      {pointsPib >= 0 ? 'l’améliore' : 'le dégrade'} de {z} {unite} de PIB ({fmtMd(effet, { signe: true, decimales: 1 })}/an en euros 2027).
+    </>
+  )
+}
 
 export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) {
   const { params, setParam, appliquerScenario, rho, setRho, scenarioActif, sansLeviersActif, changerLeviers, setOnglet } = etat
@@ -82,6 +101,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
             description="Solde public en pourcentage du PIB de 2026 à 2032, avec le programme et en tendanciel (déficit constant)."
             annees={ANNEES}
             unite="% du PIB"
+            note={<NoteDeficit t={t} />}
             domaine={[-7, 0]}
             pasGraduation={1}
             decimales={1}

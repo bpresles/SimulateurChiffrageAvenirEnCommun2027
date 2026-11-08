@@ -37,9 +37,8 @@ export function calculerTrajectoire(
   let dettePrec = hv('dette2026')
   return ANNEES.map((annee) => {
     const pib = pib0 * Math.pow(1 + g, annee - 2026)
-    // Les montants du moteur sont en euros 2027 : l'effet est indexé sur le PIB nominal.
-    const pib2027 = pib0 * (1 + g)
-    const solde = def * pib + (effetProgramme(annee, effetAn1, effetAP) * pib) / pib2027
+    // Montants du programme constants en euros 2027 (non indexés sur le PIB).
+    const solde = def * pib + effetProgramme(annee, effetAn1, effetAP)
     // Dette 2026 : stock de départ ; ensuite dette_t = dette_{t-1} − solde_t.
     const dette = annee === 2026 ? dettePrec : dettePrec - solde
     dettePrec = dette
@@ -68,4 +67,25 @@ export function trajectoiresPourParams(
     effetAn1,
     effetAP,
   }
+}
+
+export interface AmeliorationDeficit2030 {
+  /** Déficit tendanciel, en % du PIB (valeur positive). */
+  deficitTendanciel: number
+  /** Effet du programme en 2030 (Md€ constants, euros 2027). */
+  effet: number
+  /** Effet du programme en 2030 en points de PIB (effet / PIB 2030 × 100). */
+  pointsPib: number
+  /** Vrai si l'effet suffit à annuler le déficit tendanciel. */
+  suffisant: boolean
+}
+
+/** Amélioration du déficit en 2030 : effet du programme rapporté au PIB 2030. */
+export function ameliorationDeficit2030(t: Trajectoires): AmeliorationDeficit2030 {
+  const prog = t.programme.find((p) => p.annee === 2030)!
+  const tend = t.tendanciel.find((p) => p.annee === 2030)!
+  const effet = prog.solde - tend.solde
+  const pointsPib = (effet / tend.pib) * 100
+  const deficitTendanciel = -tend.soldePct
+  return { deficitTendanciel, effet, pointsPib, suffisant: pointsPib >= deficitTendanciel }
 }

@@ -32,9 +32,6 @@ export function KpiCards({ modele, params }: { modele: Modele; params: Simulatio
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <Kpi titre={`Solde (${an1 ? 'An 1' : 'année pleine'})`} valeur={fmtMd(r.solde, { signe: true })} ton={r.solde >= 0 ? 'positif' : 'negatif'} statut="hypothese-modele">
         <p>Variation du solde des APU vs trajectoire sans réforme, par an, en euros 2027.</p>
-        <p>
-          ≈ <span className="nombre">{fmtMd(pt.solde - tend.solde, { signe: true, decimales: 0 })}</span> en euros courants {anneeH} (effet indexé sur le PIB nominal).
-        </p>
         <p>Intervalle Monte-Carlo P10–P90 : <strong className="nombre text-ink">{interv(mc.solde.p10, mc.solde.p90)}</strong>{stale}</p>
         <p>
           Déficit {anneeH} : <strong className="nombre text-ink">{fmtPct(pt.soldePct)}</strong> du PIB, contre{' '}
