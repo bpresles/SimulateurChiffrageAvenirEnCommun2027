@@ -23,7 +23,7 @@ export function Segmented<T extends string | number>({ legende, options, valeur,
             aria-pressed={actif}
             onClick={() => onChange(o.valeur)}
             className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
-              actif ? 'bg-brand text-white' : 'text-ink-soft hover:bg-brand-soft'
+              actif ? 'bg-brand text-on-brand' : 'text-ink-soft hover:bg-brand-soft'
             }`}
           >
             {o.label}

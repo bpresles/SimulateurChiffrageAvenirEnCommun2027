@@ -1,7 +1,18 @@
 /** Les 10 filières d'investissement productif, reprises du modèle d'origine (sans logique). */
-import type { StatutFiabilite } from './sources'
+import type { SourceId, StatutFiabilite } from './sources'
+
+/** Libellé de la colonne « autres financeurs » des livrets. */
+export const LIBELLE_POLE = 'Pôle public bancaire et autres acteurs'
 
 export type StatutFiliere = 'publie' | 'estime'
+
+export interface AxeLivret {
+  libelle: string
+  /** Md€/an */
+  etat: number
+  /** Md€/an, pôle public bancaire et autres acteurs */
+  banque: number
+}
 
 export interface Filiere {
   id: string
@@ -23,6 +34,10 @@ export interface Filiere {
   cibles: string
   statutInvestissement: StatutFiabilite
   statutRoi: StatutFiabilite
+  /** Références du registre des sources pour les valeurs officielles. */
+  refs?: SourceId[]
+  /** Détail par axe du livret (Md€/an), si publié. */
+  axes?: AxeLivret[]
   /** Précisions sur la décomposition des coûts évités ou sur la donnée. */
   note?: string
 }
@@ -33,22 +48,47 @@ export const FILIERES: Filiere[] = [
   {
     id: 'btp', num: 1, statut: 'publie',
     nom: 'BTP, logement social et rénovation thermique',
-    desc: 'Construction de 200 000 logements publics par an, isolation complète de 700 000 logements par an (reste à charge zéro modeste), rénovation des bâtiments publics, sortie de 750 000 chaudières fossiles par an.',
-    etatP50: 12.0, banqueP50: 35.6, p10: 36.5, p50: 47.6, p90: 55.0,
-    roiDirectP50: 10.5, roiIndirectP50: 13.8, coutsEvitesP50: 7.1, emploisP50: 280000,
-    cibles: '200k logements sociaux/an • 700k isolations/an • 250k artisans formés',
-    statutInvestissement: 'officiel', statutRoi: NS,
-    note: 'Coûts évités : santé 1,8 + importations de gaz/fioul 3,3 + confort d’été 2,0. Écart de transcription signalé : la décomposition du livret donne 12,21 pour l’État et 47,81 au total, contre 12,00 et 47,60 retenus.',
+    desc: 'Selon le livret, construction de 200 000 logements publics par an et de 30 000 logements jeunes pendant cinq ans, isolation d’au moins 700 000 logements par an, rénovation des bâtiments publics, sortie des chaudières fioul.',
+    etatP50: 12.06, banqueP50: 36.4, p10: 36.5, p50: 48.46, p90: 55.0,
+    roiDirectP50: 10.5, roiIndirectP50: 13.8, coutsEvitesP50: 7.1, emploisP50: 300000,
+    cibles: '200 000 logements publics/an • 30 000 logements jeunes sur 5 ans • au moins 700 000 isolations/an',
+    statutInvestissement: 'officiel', statutRoi: NS, refs: ['S2'],
+    axes: [
+      { libelle: 'Nouveaux logements publics', etat: 3, banque: 14 },
+      { libelle: 'Rénovation des logements sociaux', etat: 0.4, banque: 1.7 },
+      { libelle: 'Isolation des logements', etat: 5.3, banque: 5.3 },
+      { libelle: 'Plan confort d’été', etat: 0.5, banque: 0.6 },
+      { libelle: 'Rénovation des bâtiments publics, associatifs et des bâtiments tertiaires privés', etat: 1.2, banque: 9 },
+      { libelle: 'Développement de la construction bois-terre-paille', etat: 0, banque: 0.2 },
+      { libelle: 'Sortie des chaudières fioul et diminution du nombre de chaudières à gaz', etat: 1, banque: 2.8 },
+      { libelle: 'Formation de professionnels de la rénovation et de la construction bas-carbone', etat: 0.06, banque: 0 },
+      { libelle: 'Réduction des déchets et réemploi', etat: 0.2, banque: 0.5 },
+      { libelle: 'Rénovation et entretien du patrimoine', etat: 0.4, banque: 0 },
+      { libelle: 'Maîtrise publique du foncier', etat: 0, banque: 0.3 },
+      { libelle: 'Accession à la propriété non spéculative', etat: 0, banque: 2 },
+    ],
+    note: 'Investissement et emplois (« plus de 300 000 ») : source officielle (S2). L’État totalise 12,06 Md€ (le livret annonce « 12 milliards »). P10, P90 et retours sectoriels (dont coûts évités : santé 1,8 ; importations 3,3 ; confort d’été 2,0) : hypothèses non sourcées.',
   },
   {
     id: 'auto', num: 2, statut: 'publie',
     nom: 'Automobile, batteries et mobilités électriques',
-    desc: 'Relocalisation à 2 millions de véhicules par an en France, souveraineté sur les batteries et le recyclage (1,4 Md€), leasing social (1,4 M de voitures d’ici 2032), fonds de soutien aux sous-traitants (1 Md€).',
-    etatP50: 1.27, banqueP50: 2.9, p10: 3.2, p50: 4.17, p90: 5.5,
-    roiDirectP50: 0.9, roiIndirectP50: 1.35, coutsEvitesP50: 0.85, emploisP50: 90000,
-    cibles: '2 M de véhicules produits/an • véhicule léger à 10 000 €',
-    statutInvestissement: 'officiel', statutRoi: NS,
-    note: 'Coûts évités : réduction du déficit commercial automobile et pétrolier.',
+    desc: 'Selon le livret, production de 2 millions de véhicules électriques par an, service public de la location abordable (1,4 million de véhicules loués d’ici 2032), filière des batteries, fonds pour la sous-traitance et les équipementiers.',
+    etatP50: 1.37, banqueP50: 3.1, p10: 3.2, p50: 4.47, p90: 5.5,
+    roiDirectP50: 0.9, roiIndirectP50: 1.35, coutsEvitesP50: 0.85, emploisP50: 40000,
+    cibles: '2 M de véhicules électriques produits/an • 1,4 M de véhicules loués d’ici 2032 • Fonds Avenir Automobile doté de 4 Md€',
+    statutInvestissement: 'officiel', statutRoi: NS, refs: ['S3'],
+    axes: [
+      { libelle: 'Nouvelles lignes de production', etat: 0.1, banque: 0.2 },
+      { libelle: 'Service public de la location abordable', etat: 0.3, banque: 0.7 },
+      { libelle: 'Aides à l’achat de véhicules électriques et locaux', etat: 0.2, banque: 0.2 },
+      { libelle: 'Fonds pour la sous-traitance et les équipementiers', etat: 0.2, banque: 0.8 },
+      { libelle: 'Filière des batteries', etat: 0.5, banque: 0.9 },
+      { libelle: 'Réparation, réemploi, recyclage', etat: 0.05, banque: 0.24 },
+      { libelle: 'Bornes de recharge', etat: 0, banque: 0.02 },
+      { libelle: 'Formation', etat: 0, banque: 0.01 },
+      { libelle: 'R&D et déploiement de minibus autonomes', etat: 0.02, banque: 0.03 },
+    ],
+    note: 'Investissement et emplois (« plus de 40 000 ») : source officielle (S3). L’État totalise 1,37 Md€ (le livret annonce « 1,4 milliard ») et le total 4,47 Md€ (« 4,5 milliards d’euros par an, tous acteurs confondus »). P10, P90 et retours sectoriels : hypothèses non sourcées.',
   },
   {
     id: 'energie', num: 3, statut: 'estime',
@@ -78,7 +118,7 @@ export const FILIERES: Filiere[] = [
     roiDirectP50: 2.2, roiIndirectP50: 2.7, coutsEvitesP50: 2.4, emploisP50: 85000,
     cibles: 'Zéro fuite sur le réseau • plan Eau Outre-mer',
     statutInvestissement: NS, statutRoi: NS,
-    note: 'Coûts évités : réduction de dégâts climatiques (ordre de grandeur de 16 Md€/an cité, à vérifier).',
+    note: 'Coûts évités : réduction de dégâts climatiques (coût de 16 Md€ en 2026 selon S1).',
   },
   {
     id: 'industrie', num: 6, statut: 'estime',

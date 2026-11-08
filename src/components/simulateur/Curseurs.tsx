@@ -1,4 +1,4 @@
-import { BADGE_BCE } from '../../data/leviers'
+import { LEVIERS, type CleLevier } from '../../data/leviers'
 import { fmtMd, fmtMult, fmtNombre, fmtPct } from '../../lib/format'
 import type { ResultatSimulation, SimulationParams } from '../../model/types'
 import { Badge } from '../ui/Badge'
@@ -13,9 +13,11 @@ interface Props {
   setParam: SetParam
 }
 
-const BadgeBce = () => (
-  <span className="rounded border border-negatif/40 bg-negatif-soft px-1.5 py-0.5 text-[11px] font-semibold text-negatif">{BADGE_BCE}</span>
-)
+const BadgeJuridique = ({ id }: { id: CleLevier }) => {
+  const b = LEVIERS.find((l) => l.id === id)!.badgeJuridique
+  const classes = b.ton === 'bce' ? 'border-negatif/40 bg-negatif-soft text-negatif' : 'border-line bg-neutre-soft text-ink-soft'
+  return <span className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold ${classes}`}>{b.texte}</span>
+}
 
 export function CurseursEconomie({ params, r, setParam }: Props) {
   const an1 = params.horizon === 'an1'
@@ -93,7 +95,7 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         disabled={an1}
         affichage={`${fmtPct(params.gelBcePct, 0)} (${ligne(r.leviers.gelBce)})`}
         texteVocal={`${params.gelBcePct} pour cent, soit ${fmtNombre(r.leviers.gelBce)} milliards d'euros par an`}
-        badge={<BadgeBce />}
+        badge={<BadgeJuridique id="gelBce" />}
         aide={an1 ? 'Sans effet à l’horizon An 1.' : undefined}
       />
       <Slider
@@ -101,9 +103,10 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         valeur={params.cadesPct} min={0} max={100} pas={5}
         onChange={(v) => setParam('cadesPct', v)}
         disabled={an1}
+        badge={<><Badge statut="officiel" court /><BadgeJuridique id="cades" /></>}
         affichage={`${fmtPct(params.cadesPct, 0)} (brut ${fmtMd(r.leviers.cadesBrute)} ; compté ${fmtMd(r.leviers.cadesComptee)})`}
         texteVocal={`${params.cadesPct} pour cent, soit ${fmtNombre(r.leviers.cadesBrute)} milliards d'euros bruts et ${fmtNombre(r.leviers.cadesComptee)} comptés dans le solde`}
-        aide={an1 ? 'Sans effet à l’horizon An 1.' : 'Gain pour la Sécurité sociale ; non compté dans le solde consolidé par défaut.'}
+        aide={an1 ? 'Sans effet à l’horizon An 1.' : 'Le programme chiffre la réforme à 19 Md€/an (S6). En lecture APU consolidée, cette somme est une recette déjà présente dans la trajectoire de base : décocher pour cette lecture.'}
       />
       <div className="pb-1">
         <label className="flex items-center gap-2 text-sm">
@@ -113,7 +116,7 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
             onChange={(e) => setParam('cadesCompteDansSolde', e.target.checked)}
             className="h-4 w-4 accent-brand"
           />
-          Compter la CADES dans le solde consolidé (option)
+          Compter la réaffectation CADES dans le solde (19 Md€, S6)
         </label>
       </div>
       <Slider
@@ -122,7 +125,7 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         onChange={(v) => setParam('primaireBcePct', v)}
         affichage={`${fmtPct(params.primaireBcePct, 0)} (${ligne(r.leviers.primaire)})`}
         texteVocal={`${params.primaireBcePct} pour cent, soit ${fmtNombre(r.leviers.primaire)} milliards d'euros par an`}
-        badge={<BadgeBce />}
+        badge={<BadgeJuridique id="primaireBce" />}
         aide={`Bonification restante comptée en friction : ${fmtMd(r.frictions.bonification)}.`}
       />
       <Slider
@@ -131,6 +134,7 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         onChange={(v) => setParam('circuitTresorPct', v)}
         affichage={`${fmtPct(params.circuitTresorPct, 0)} (${ligne(r.leviers.tresor)})`}
         texteVocal={`${params.circuitTresorPct} pour cent, soit ${fmtNombre(r.leviers.tresor)} milliards d'euros par an`}
+        badge={<BadgeJuridique id="circuitTresor" />}
         aide={an1 ? 'Moitié de l’effet en An 1.' : `Risque de spread résiduel : ${fmtMd(r.frictions.spread)}.`}
       />
     </Carte>

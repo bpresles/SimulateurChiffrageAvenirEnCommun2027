@@ -29,7 +29,7 @@ export function simuler(
   const mult = params.multiplicateur
   const ratioMult = mult / hv('multiplicateurRef')
 
-  const agregat = agregerFilieres(params.percentile, mult, investissements)
+  const agregat = agregerFilieres(params.percentile, mult, investissements, options.filieres)
   const roiScale = AP ? 1 : hv('roiScaleAn1')
 
   // Dépenses
@@ -64,7 +64,7 @@ export function simuler(
     : 0
 
   // Leviers
-  const gelBce = AP ? hv('gelBce') * pct(params.gelBcePct) : 0
+  const gelBce = AP ? (options.gelBceBrut ?? hv('gelBce')) * pct(params.gelBcePct) : 0
   const cadesBrute = AP ? hv('cades') * pct(params.cadesPct) : 0
   const cadesComptee = c.cades ? (params.cadesCompteDansSolde ? cadesBrute : 0) : cadesBrute
   const primaire =
@@ -128,6 +128,8 @@ export interface ImpactCorrection {
   marginal: number
   /** solde(seule cette correction) − solde(modèle d'origine). */
   isole: number
+  /** Vrai si la correction est effectivement appliquée dans le scénario courant (la CADES l'est si l'option « compter la CADES » est décochée). */
+  active: boolean
 }
 
 /** Relance le moteur correction par correction. */
@@ -136,14 +138,22 @@ export function impactCorrections(
   options: ModelOptions = OPTIONS_PAR_DEFAUT,
 ): ImpactCorrection[] {
   const soldeAvec = simuler(params, options).solde
-  const soldeOrigine = simuler(params, OPTIONS_ORIGINE).solde
+  const origine: ModelOptions = { ...OPTIONS_ORIGINE, filieres: options.filieres, gelBceBrut: options.gelBceBrut }
+  const soldeOrigine = simuler(params, origine).solde
   return CLES_CORRECTIONS.map((cle) => {
-    const sans: ModelOptions = { corrections: { ...options.corrections, [cle]: false } }
-    const seule: ModelOptions = { corrections: { ...OPTIONS_ORIGINE.corrections, [cle]: true } }
+    if (cle === 'cades') {
+      // Impact qu'aurait l'exclusion de la CADES du solde, quelle que soit la valeur actuelle de l'option.
+      const compte = simuler({ ...params, cadesCompteDansSolde: true }, options).solde
+      const exclu = simuler({ ...params, cadesCompteDansSolde: false }, options).solde
+      return { cle, marginal: exclu - compte, isole: exclu - compte, active: options.corrections.cades && !params.cadesCompteDansSolde }
+    }
+    const sans: ModelOptions = { ...options, corrections: { ...options.corrections, [cle]: false } }
+    const seule: ModelOptions = { ...origine, corrections: { ...OPTIONS_ORIGINE.corrections, [cle]: true } }
     return {
       cle,
       marginal: soldeAvec - simuler(params, sans).solde,
       isole: simuler(params, seule).solde - soldeOrigine,
+      active: options.corrections[cle],
     }
   })
 }

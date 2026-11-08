@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
-  const lecture = ['tauxBonification', 'risqueSpread', 'pib2026', 'croissanceNominale', 'deficitTendanciel', 'dettePib2026', 'stockBce'] as const
+  const lecture = ['tauxBonification', 'risqueSpread', 'pib2026', 'croissanceNominale', 'deficitTendanciel', 'dette2026', 'stockBce'] as const
   return (
     <details className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <summary className="cursor-pointer text-base font-bold">Hypothèses avancées</summary>
@@ -38,8 +38,7 @@ export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
           />
         </div>
         <div>
-          <h3 className="mb-1 text-sm font-bold">Paramètres en lecture seule</h3>
-          <p className="mb-2 text-xs text-ink-soft">Modifiables dans <code className="nombre">src/data/hypotheses.ts</code>.</p>
+          <h3 className="mb-2 text-sm font-bold">Paramètres en lecture seule</h3>
           <ul className="space-y-1.5 text-sm">
             {lecture.map((k) => (
               <li key={k} className="flex flex-wrap items-center justify-between gap-2">

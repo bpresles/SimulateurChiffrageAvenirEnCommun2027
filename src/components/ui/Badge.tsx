@@ -12,7 +12,7 @@ export function Badge({ statut, court = false }: { statut: StatutFiabilite; cour
   return (
     <span
       title={info.description}
-      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-tight ${STYLES[statut]}`}
+      className={`inline-flex items-center whitespace-nowrap font-sans rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-tight ${STYLES[statut]}`}
     >
       {court ? info.label.replace('Hypothèse de modélisation', 'Modélisation').replace('Hypothèse non sourcée', 'Non sourcée') : info.label}
     </span>

@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react'
-import { RECETTES_AN1, sommeLignes } from '../../data/budgetAn1'
-import { HYPOTHESES } from '../../data/hypotheses'
 import { Download } from 'lucide-react'
 import { telechargerCsv, versCsv } from '../../lib/csv'
-import { fmtMd } from '../../lib/format'
 import { Badge } from '../ui/Badge'
-import { Avertissement, Carte } from '../ui/Carte'
+import { Carte } from '../ui/Carte'
+import { RefSources } from '../ui/RefSources'
 import { ENTETES_CSV, FOURCHETTE_TEXTE, PILIERS, construireLignes, ligneCsv, type Pilier } from './lignes'
 
 const normaliser = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
@@ -22,24 +20,23 @@ export function MatriceTab() {
       (l) => (pilier === 'tous' || l.pilier === pilier) && (n === '' || normaliser(`${l.mesure} ${l.commentaire} ${l.sousPilier ?? ''}`).includes(n)),
     )
   }, [toutes, q, pilier])
-  const somme = sommeLignes(RECETTES_AN1)
 
   return (
     <div className="space-y-5">
       <Carte>
-        <h1 className="text-xl font-extrabold">Matrice détaillée des mesures</h1>
+        <h2 className="text-xl font-extrabold">Matrice détaillée des mesures</h2>
         <p className="mt-2 max-w-4xl text-sm text-ink-soft">
-          Toutes les lignes du chiffrage : dépenses et recettes de première année, dépenses et recettes d’année pleine, 10 filières d’investissement et 4 leviers
+          Toutes les lignes du chiffrage : dépenses et recettes de première année, dépenses et recettes d’année pleine, 10 filières d’investissement (avec le détail par axe des livrets BTP et automobile) et 4 leviers
           monétaires. Montants en Md€ par an. Le statut indique la fiabilité de chaque chiffre.
         </p>
       </Carte>
-      <Avertissement titre="Écart de données à signaler">
-        <p>
-          Les recettes An 1 annoncées totalisent <strong className="nombre">{fmtMd(HYPOTHESES.recettesAn1.valeur)}</strong>, alors que la somme des lignes détaillées ci-dessous
-          vaut <strong className="nombre">{fmtMd(somme)}</strong>, soit un écart de <strong className="nombre">{fmtMd(somme - HYPOTHESES.recettesAn1.valeur)}</strong>. La ligne « ISF renforcé climatique » (10 Md€)
-          n’entre dans aucun sous-total annoncé. Le moteur utilise 106,4 Md€. Fourchette réaliste totale citée pour l’année 1 : {FOURCHETTE_TEXTE} Md€ (estimation externe citée, non vérifiée).
+      <Carte>
+        <p className="text-sm text-ink-soft">
+          Le moteur utilise 81,7 Md€ de dépenses et 106,4 Md€ de recettes en première année, égaux à la somme des lignes détaillées du cadrage officiel (S1). Les fourchettes
+          « instituts » ne figurent pas sur le site du programme : ce sont des estimations externes citées, non vérifiées. Fourchette réaliste totale citée pour l’année 1 :
+          {' '}{FOURCHETTE_TEXTE} Md€ (même statut).
         </p>
-      </Avertissement>
+      </Carte>
       <Carte>
         <div className="mb-3 flex flex-wrap items-end gap-3">
           <div>
@@ -58,7 +55,7 @@ export function MatriceTab() {
           <button
             type="button"
             onClick={() => telechargerCsv('matrice-detaillee.csv', versCsv(ENTETES_CSV, visibles.map(ligneCsv)))}
-            className="ml-auto flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="ml-auto flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:opacity-90"
           >
             <Download aria-hidden="true" className="h-4 w-4" /> Exporter en CSV ({visibles.length})
           </button>
@@ -84,7 +81,12 @@ export function MatriceTab() {
                     {l.fourchette}
                     {l.statutFourchette && <div className="mt-1"><Badge statut={l.statutFourchette} /></div>}
                   </td>
-                  <td className="px-2 py-2"><Badge statut={l.statut} /></td>
+                  <td className="px-2 py-2">
+                    <div className="flex flex-col items-start gap-1">
+                      <Badge statut={l.statut} />
+                      <RefSources refs={l.refs} />
+                    </div>
+                  </td>
                   <td className="px-2 py-2 text-xs text-ink-soft">{l.commentaire}</td>
                 </tr>
               ))}

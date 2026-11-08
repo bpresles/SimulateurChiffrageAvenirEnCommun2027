@@ -47,7 +47,7 @@ export function Onglets({ actif, onChange }: { actif: Onglet; onChange: (o: Ongl
         )
       })}
     </div>
-    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-brand to-transparent md:hidden" />
+    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-entete to-transparent md:hidden" />
     </div>
   )
 }
