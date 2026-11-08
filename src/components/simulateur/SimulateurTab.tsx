@@ -16,8 +16,8 @@ import { hv } from '../../data/hypotheses'
 type Etat = ReturnType<typeof useSimulationParams>
 
 export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) {
-  const { params, setParam, appliquerScenario, rho, setRho, scenarioActif, setOnglet } = etat
-  const { resultat: r, trajectoires: t, soldesScenarios } = modele
+  const { params, setParam, appliquerScenario, rho, setRho, scenarioActif, sansLeviersActif, changerLeviers, setOnglet } = etat
+  const { resultat: r, trajectoires: t, soldesScenarios, soldesSansLeviers } = modele
   const gel = params.gelBcePct > 0
   return (
     <div className="space-y-5">
@@ -51,7 +51,14 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
             options={[{ valeur: 'an1', label: 'An 1 (2027)' }, { valeur: 'anneePleine', label: 'Année pleine' }]}
           />
         </div>
-        <Presets actif={scenarioActif} soldes={soldesScenarios} onChoisir={appliquerScenario} />
+        <Presets
+          actif={scenarioActif}
+          sansLeviers={sansLeviersActif}
+          soldes={soldesScenarios}
+          soldesSans={soldesSansLeviers}
+          onChoisir={(c) => appliquerScenario(c, sansLeviersActif)}
+          onChangerLeviers={changerLeviers}
+        />
       </Carte>
 
       <KpiCards modele={modele} params={params} />

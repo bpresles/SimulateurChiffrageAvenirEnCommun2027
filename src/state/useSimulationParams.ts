@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { PARAMS_PAR_DEFAUT, SCENARIOS, type CleScenario } from '../data/scenarios'
+import { PARAMS_PAR_DEFAUT, type CleScenario } from '../data/scenarios'
 import { hv } from '../data/hypotheses'
+import { aUneVariante, paramsPreset, reconnaitrePreset } from '../model/presets'
 import type { SimulationParams } from '../model/types'
 
 export type Onglet = 'simulateur' | 'filieres' | 'leviers' | 'matrice' | 'methodologie'
@@ -70,10 +71,6 @@ export function ecrireUrl(etat: EtatUrl): string {
   return q.toString()
 }
 
-/** Compare les paramètres des préréglages ; la croissance nominale n'en fait pas partie. */
-const memeParams = (a: SimulationParams, b: SimulationParams) =>
-  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => k === 'croissanceNominalePct' || a[k] === b[k])
-
 export function useSimulationParams() {
   const initial = useMemo(() => lireUrl(window.location.search), [])
   const [params, setParams] = useState<SimulationParams>(initial.params)
@@ -84,9 +81,15 @@ export function useSimulationParams() {
     setParams((p) => ({ ...p, [cle]: valeur }))
   }, [])
 
-  const appliquerScenario = useCallback((cle: CleScenario) => {
-    const s = SCENARIOS.find((x) => x.cle === cle)
-    if (s) setParams((p) => ({ ...s.params, croissanceNominalePct: p.croissanceNominalePct }))
+  const initialSans = useMemo(() => {
+    const r = reconnaitrePreset(initial.params)
+    return r ? r.sansLeviers : false
+  }, [initial])
+  const [choixSans, setChoixSans] = useState(initialSans)
+
+  /** Applique un préréglage dans la variante donnée ; la croissance nominale en cours est conservée. */
+  const appliquerScenario = useCallback((cle: CleScenario, sans: boolean) => {
+    setParams((p) => ({ ...paramsPreset(cle, sans), croissanceNominalePct: p.croissanceNominalePct }))
   }, [])
 
   const setOnglet = useCallback((o: Onglet) => setOngletEtat(o), [])
@@ -106,8 +109,18 @@ export function useSimulationParams() {
     return () => window.clearTimeout(minuteur.current)
   }, [params, rho, onglet])
 
-  const scenarioActif: CleScenario | 'personnalise' =
-    SCENARIOS.find((s) => memeParams(s.params, params))?.cle ?? 'personnalise'
+  const reconnu = reconnaitrePreset(params)
+  const scenarioActif: CleScenario | 'personnalise' = reconnu?.cle ?? 'personnalise'
+  // L'interrupteur se déduit des paramètres quand le préréglage a une variante ; sinon on garde le dernier choix.
+  const sansLeviersActif = reconnu && aUneVariante(reconnu.cle) ? reconnu.sansLeviers : choixSans
 
-  return { params, setParam, appliquerScenario, rho, setRho, onglet, setOnglet, scenarioActif }
+  const changerLeviers = useCallback(
+    (sans: boolean) => {
+      setChoixSans(sans)
+      if (reconnu && aUneVariante(reconnu.cle)) appliquerScenario(reconnu.cle, sans)
+    },
+    [reconnu, appliquerScenario],
+  )
+
+  return { params, setParam, appliquerScenario, rho, setRho, onglet, setOnglet, scenarioActif, sansLeviersActif, changerLeviers }
 }
