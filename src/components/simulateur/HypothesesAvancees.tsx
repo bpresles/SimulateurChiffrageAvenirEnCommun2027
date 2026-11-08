@@ -1,5 +1,6 @@
 import { HYPOTHESES } from '../../data/hypotheses'
-import { fmtNombre, fmtPct, fmtValeurUnite } from '../../lib/format'
+import { NOTE_BONIFICATION } from '../../data/poleBancaire'
+import { fmtMd, fmtNombre, fmtPct, fmtValeurUnite } from '../../lib/format'
 import type { SimulationParams } from '../../model/types'
 import { Badge } from '../ui/Badge'
 import { Slider } from '../ui/Slider'
@@ -9,10 +10,12 @@ interface Props {
   rho: number
   setRho: (v: number) => void
   setParam: <K extends keyof SimulationParams>(c: K, v: SimulationParams[K]) => void
+  /** Bonification comptée dans le solde (Md€), pour affichage. */
+  bonificationMd: number
 }
 
-export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
-  const lecture = ['tauxBonification', 'risqueSpread', 'pib2026', 'deficitTendanciel', 'dette2026', 'stockBce'] as const
+export function HypothesesAvancees({ params, rho, setRho, setParam, bonificationMd }: Props) {
+  const lecture = ['risqueSpread', 'pib2026', 'deficitTendanciel', 'dette2026', 'stockBce'] as const
   return (
     <details className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <summary className="cursor-pointer text-base font-bold">Hypothèses avancées</summary>
@@ -37,6 +40,15 @@ export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
             aide="Croissance nominale du PIB (réelle + inflation) dans les trajectoires. N’affecte pas le solde en Md€, seulement les ratios en % du PIB."
           />
           <Slider
+            label="Coût de bonification du pôle public bancaire"
+            valeur={params.tauxBonificationPct} min={0} max={8} pas={0.5}
+            onChange={(v) => setParam('tauxBonificationPct', v)}
+            affichage={`${fmtPct(params.tauxBonificationPct)} (${fmtMd(-bonificationMd, { signe: true })})`}
+            texteVocal={`${fmtNombre(params.tauxBonificationPct)} pour cent des prêts du pôle, soit ${fmtNombre(bonificationMd)} milliards d'euros de friction`}
+            badge={<Badge statut="hypothese-modele" court />}
+            aide={NOTE_BONIFICATION}
+          />
+          <Slider
             label="Corrélation entre filières (Monte-Carlo, ρ)"
             valeur={rho} min={0} max={0.95} pas={0.05}
             onChange={setRho}
@@ -54,7 +66,7 @@ export function HypothesesAvancees({ params, rho, setRho, setParam }: Props) {
                 <span>{HYPOTHESES[k].libelle}</span>
                 <span className="flex items-center gap-2">
                   <span className="nombre font-medium">
-                    {k === 'tauxBonification' ? '8 %' : fmtValeurUnite(HYPOTHESES[k].valeur, HYPOTHESES[k].unite)}
+                    {fmtValeurUnite(HYPOTHESES[k].valeur, HYPOTHESES[k].unite)}
                   </span>
                   <Badge statut={HYPOTHESES[k].statut} court />
                 </span>

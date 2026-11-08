@@ -9,6 +9,8 @@ export interface ComposanteLevier {
   /** Montant en Md€/an, ou null si non chiffré. */
   montant: number | null
   texte?: string
+  /** Valeur calculée par le moteur selon le scénario actif (affichée à la place du montant). */
+  dynamique?: 'bonification'
 }
 
 export interface OrdreGrandeur {
@@ -56,13 +58,13 @@ export const LEVIERS: Levier[] = [
     mecanisme:
       'Selon le programme (S1, S6), la BCE serait invitée à annuler ou transformer en dettes perpétuelles à taux nul la part de dette publique française qu’elle détient, et l’émission d’OATi (titres indexés sur l’inflation) prendrait fin. La fin des OATi porte sur les nouvelles émissions : le gain est progressif. L’économie porte sur les intérêts versés.',
     decomposition: [
-      { libelle: 'Intérêts économisés sur le stock détenu par la Banque de France (597,0 Md€ au 31/10/2026, S8 + S9, × taux implicite : hypothèse non sourcée)', montant: HYPOTHESES.gelBceInterets.valeur },
+      { libelle: 'Intérêts économisés sur les titres détenus par l’Eurosystème (597,0 Md€ au 31/10/2026, S8 + S9, × taux implicite : hypothèse non sourcée)', montant: HYPOTHESES.gelBceInterets.valeur },
       { libelle: 'Fin des OATi (nouvelles émissions ; hypothèse non sourcée)', montant: HYPOTHESES.gelBceOati.valeur },
       { libelle: 'Effet sur le ratio dette/PIB comptable en cas d’extinction du stock', montant: null, texte: 'Voir remarque sur la dette au sens de Maastricht.' },
     ],
     limites: [
       'Le stock baisse chaque année (titres échus non réinvestis) : le gain d’un gel diminue donc avec le temps, ce que le modèle « année pleine » ne représente pas.',
-      'Une partie des intérêts perçus par la Banque de France revient à l’État via ses bénéfices ; le gain net pour les finances publiques peut être inférieur au gain brut affiché.',
+      'Hypothèse du modèle (non présente dans les sources S1, S4, S6) : les réserves bancaires créées par les rachats de la BCE sont converties en réserves obligatoires non rémunérées. La Banque de France cesse à la fois de percevoir les intérêts des titres gelés et de rémunérer ces réserves : l’opération est neutre pour elle et l’État conserve le gain brut. Le coût est supporté par les banques, qui perdent cette rémunération. Décision relevant de la BCE.',
     ],
     cadreJuridique:
       'Nécessite une décision de la BCE. Selon le programme (S1), pas de révision des traités nécessaire. Une conversion en dette perpétuelle ne réduit pas la dette au sens de Maastricht.',
@@ -80,11 +82,11 @@ export const LEVIERS: Levier[] = [
   {
     id: 'primaireBce', numero: 2,
     titre: 'Financement direct des États par la banque centrale (sans passer par les banques privées)',
-    montantBrut: 14.5, fourchette: { min: 0, max: 14.5 }, statutMontant: 'hypothese-non-sourcee',
+    montantBrut: HYPOTHESES.primaireBceCorrige.valeur, fourchette: { min: 0, max: HYPOTHESES.primaireBceCorrige.valeur }, statutMontant: 'hypothese-non-sourcee',
     mecanisme:
       'Selon le programme (S6), il s’agit de proposer la modification du TFUE et du statut de la BCE pour lui permettre d’acheter de la dette publique sans passer par les banques privées, en mettant notamment en place une autorisation de découvert des États. Selon S4, le pôle public bancaire se refinancerait auprès de la BCE « comme le font toutes les banques dans le cadre des traités ». Hypothèse du modèle (non sourcée) : ce canal fournirait un financement à 0 % de la transition écologique et du pôle, de sorte que le pôle prêterait à 0 % sans bonification de l’État.',
     decomposition: [
-      { libelle: 'Suppression du coût de bonification des prêts à 0 % du pôle (hypothèse du modèle, non sourcée)', montant: 8.0 },
+      { libelle: 'Suppression du coût de bonification des prêts du pôle (friction évitée selon le taux réglé ; 0 % par défaut, S4)', montant: null, dynamique: 'bonification' },
       { libelle: 'Financement à 0 % des investissements publics (hypothèse du modèle, non sourcée)', montant: 6.5 },
       { libelle: 'Escompte à taux zéro pour les TPE-PME par le pôle public bancaire (S6)', montant: null, texte: 'Mesure du programme, non chiffrée.' },
     ],
@@ -92,7 +94,7 @@ export const LEVIERS: Levier[] = [
       'Le financement monétaire direct des États est interdit par l’article 123 TFUE. Le programme (S6) propose de modifier le TFUE et le statut de la BCE pour lui permettre d’acheter de la dette publique sans passer par les banques privées, avec une autorisation de découvert des États.',
     badgeJuridique: { texte: 'Nécessite une modification du TFUE et des statuts de la BCE, proposée par le programme (S6).', ton: 'bce' },
     comptageMoteur:
-      'Seuls les 6,5 Md€ de financement à 0 % sont comptés en gain. Les 8 Md€ de bonification sont une friction du modèle : sans le levier le Pôle prête à 0 % et l’État paie la bonification ; avec le levier cette friction disparaît. La compter aussi comme gain serait un double compte. Le gain total de passer de 0 à 100 % est donc 6,5 Md€ plus la friction de bonification évitée.',
+      'Seuls les 6,5 Md€ de financement à 0 % sont comptés en gain. La bonification est une friction du modèle, calculée au taux réglé en hypothèses avancées (0 % par défaut : le programme affirme l’équilibre financier du pôle, S4). Si ce taux est positif, passer de 0 à 100 % du levier supprime cette friction ; la compter aussi comme gain serait un double compte.',
     comptageOrigine: '14,5 Md€ comptés en gain, et la bonification également comptée en friction quand le levier est partiel.',
     ordresGrandeur: [
       { libelle: 'Taux de refinancement via les spécialistes en valeurs du Trésor (SVT)', valeur: '3,1 à 3,5 % (hypothèse du modèle, à vérifier)' },

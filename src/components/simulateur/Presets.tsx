@@ -41,7 +41,7 @@ export function Presets({ actif, sansLeviers, soldes, soldesSans, onChoisir, onC
       </div>
       <p className="mb-3 text-xs text-ink-soft">
         « Sans » met à 0 le gel BCE, l’emprunt primaire et le circuit du Trésor ; les autres paramètres sont inchangés. La CADES est conservée : c’est une mesure budgétaire nationale sourcée (S6), qui ne dépend ni de la BCE ni des marchés.
-        Le préréglage « Sans leviers monétaires (traités UE inchangés) » diffère : il met aussi la CADES à 0. L’interrupteur est sans effet sur lui et sur « Stress-test ».
+        L’interrupteur est sans effet sur « Stress-test », qui n’utilise aucun levier.
       </p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {SCENARIOS.map((s) => {

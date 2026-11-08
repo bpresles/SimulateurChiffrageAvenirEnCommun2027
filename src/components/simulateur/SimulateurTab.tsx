@@ -87,7 +87,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
         <CurseursLeviers params={params} r={r} setParam={setParam} />
       </div>
 
-      <HypothesesAvancees params={params} rho={rho} setRho={setRho} setParam={setParam} />
+      <HypothesesAvancees params={params} rho={rho} setRho={setRho} setParam={setParam} bonificationMd={r.frictions.bonification} />
 
       <Carte titre="Du solde sans réforme au solde avec réforme : décomposition">
         <p className="mb-3 text-sm text-ink-soft">Chaque barre est une composante du solde, en Md€ par an. Sur mobile, le graphique défile horizontalement.</p>

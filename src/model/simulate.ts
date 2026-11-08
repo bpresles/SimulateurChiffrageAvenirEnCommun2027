@@ -9,6 +9,7 @@ export const OPTIONS_PAR_DEFAUT: ModelOptions = {
 /** Comportement du modèle d'origine : aucune correction. */
 export const OPTIONS_ORIGINE: ModelOptions = {
   corrections: { bonification: false, cades: false, coutsEvites: false, effetRecessif: false },
+  tauxBonification: hv('tauxBonification'),
 }
 
 export const CLES_CORRECTIONS: CleCorrection[] = ['bonification', 'cades', 'coutsEvites', 'effetRecessif']
@@ -76,14 +77,17 @@ export function simuler(
 
   // Frictions
   const importations = Math.max(hv('fuiteImportMin'), (hv('fuiteImportSeuil') - mult) * hv('fuiteImportPente'))
-  const bonification =
-    agregat.totalBanque * hv('tauxBonification') * (1 - pct(params.primaireBcePct)) * (c.bonification ? roiScale : 1)
+  const tauxBonif = options.tauxBonification ?? pct(params.tauxBonificationPct)
+  const echelleBonif = c.bonification ? roiScale : 1
+  const bonificationSansLevier = agregat.totalBanque * tauxBonif * echelleBonif
+  const bonification = bonificationSansLevier * (1 - pct(params.primaireBcePct))
   const spread = AP ? (1 - pct(params.circuitTresorPct)) * hv('risqueSpread') : 0
   const frictionsTotal = AP
     ? bonification + spread + importations
     : importations * hv('fuiteImportAn1Ratio') + (c.bonification ? bonification : 0)
   const frictions = {
     bonification: AP || c.bonification ? bonification : 0,
+    bonificationSansLevier,
     spread,
     importations: AP ? importations : importations * hv('fuiteImportAn1Ratio'),
     total: frictionsTotal,

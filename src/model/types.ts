@@ -25,6 +25,8 @@ export interface SimulationParams {
   cadesCompteDansSolde: boolean
   /** 0..5 : croissance nominale tendancielle du PIB (%/an), utilisée par les trajectoires seulement. */
   croissanceNominalePct: number
+  /** 0..8 : coût de bonification du pôle public bancaire (% des prêts du pôle), 0 par défaut. */
+  tauxBonificationPct: number
 }
 
 export interface ModelOptions {
@@ -32,6 +34,8 @@ export interface ModelOptions {
   filieres?: readonly Filiere[]
   /** Gain brut du gel BCE (Md€/an) alternatif, pour figer le modèle d'origine (22). */
   gelBceBrut?: number
+  /** Taux de bonification alternatif (ratio, ex. 0,08), pour figer le modèle d'origine. Sinon : paramètre des curseurs. */
+  tauxBonification?: number
   corrections: {
     bonification: boolean
     cades: boolean
@@ -90,7 +94,7 @@ export interface ResultatSimulation {
     tresor: number
     total: number
   }
-  frictions: { bonification: number; spread: number; importations: number; total: number }
+  frictions: { bonification: number; bonificationSansLevier: number; spread: number; importations: number; total: number }
   leviersNets: number
   /** Retours attribués aux filières comptés dans le solde (direct, indirect, évités budgétaires). */
   retoursFilieres: number

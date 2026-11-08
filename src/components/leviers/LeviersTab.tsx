@@ -52,7 +52,9 @@ export function LeviersTab({ resultat }: { resultat: ResultatSimulation }) {
                 {l.decomposition.map((c) => (
                   <li key={c.libelle} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-line/60 py-1">
                     <span className="min-w-0 break-words">{c.libelle}</span>
-                    {c.montant === null ? (
+                    {c.dynamique === 'bonification' ? (
+                      <span className="nombre shrink-0 text-right">{fmtMd(resultat.frictions.bonificationSansLevier)}</span>
+                    ) : c.montant === null ? (
                       <span className="min-w-0 break-words text-right text-ink-soft">{c.texte ?? '—'}</span>
                     ) : (
                       <span className="nombre shrink-0 text-right">{fmtMd(c.montant, { signe: true })}</span>
@@ -68,6 +70,11 @@ export function LeviersTab({ resultat }: { resultat: ResultatSimulation }) {
               <p className="mt-2 text-sm">
                 Scénario actif ({resultat.horizon === 'an1' ? 'An 1' : 'année pleine'}) : <strong className="font-semibold">{montantCompte(l, resultat)}</strong>
               </p>
+              {l.id === 'primaireBce' && (
+                <p className="mt-1 text-sm">
+                  Friction de bonification évitée par le levier : <strong className="font-semibold">{fmtMd(resultat.frictions.bonificationSansLevier)}</strong> selon le taux réglé.
+                </p>
+              )}
             </section>
             <section>
               <h3 className="text-sm font-bold">Cadre juridique</h3>
