@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/jetbrains-mono';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-ink: #17212e;
+  --color-ink-soft: #465263;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f3f5f8;
+  --color-line: #d5dbe3;
+  --color-brand: #1e3a5f;
+  --color-brand-soft: #e4ebf4;
+  --color-positif: #0b6b5b;
+  --color-positif-soft: #dff3ee;
+  --color-negatif: #ad2a1f;
+  --color-negatif-soft: #fbe6e3;
+  --color-attention: #8a5a00;
+  --color-attention-soft: #fdf1d6;
+  --color-info: #2b5fa8;
+  --color-info-soft: #e3edfa;
+  --color-neutre-soft: #ebeef2;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body {
+    background: var(--color-surface-alt);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-info);
+    outline-offset: 2px;
+  }
+  input[type='range'] { accent-color: var(--color-brand); width: 100%; min-height: 1.5rem; }
+  input[type='range']:disabled { opacity: 0.45; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  table { border-collapse: collapse; }
+}
+
+.nombre { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
