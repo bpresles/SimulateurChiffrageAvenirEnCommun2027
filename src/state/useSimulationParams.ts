@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PARAMS_PAR_DEFAUT, type CleScenario } from '../data/scenarios'
 import { hv } from '../data/hypotheses'
-import { aUneVariante, paramsPreset, reconnaitrePreset } from '../model/presets'
+import { aUneVariante, memeParamsStrict, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from '../model/presets'
 import type { SimulationParams } from '../model/types'
 
 export type Onglet = 'simulateur' | 'filieres' | 'leviers' | 'matrice' | 'methodologie'
@@ -87,9 +87,11 @@ export function useSimulationParams() {
     return r ? r.sansLeviers : false
   }, [initial])
   const [choixSans, setChoixSans] = useState(initialSans)
+  const [dernierPreset, setDernierPreset] = useState<CleScenario | null>(() => reconnaitrePreset(initial.params)?.cle ?? null)
 
   /** Applique un préréglage dans la variante donnée ; la croissance nominale en cours est conservée. */
   const appliquerScenario = useCallback((cle: CleScenario, sans: boolean) => {
+    setDernierPreset(cle)
     setParams((p) => ({ ...paramsPreset(cle, sans), croissanceNominalePct: p.croissanceNominalePct, tauxBonificationPct: p.tauxBonificationPct }))
   }, [])
 
@@ -123,5 +125,15 @@ export function useSimulationParams() {
     [reconnu, appliquerScenario],
   )
 
-  return { params, setParam, appliquerScenario, rho, setRho, onglet, setOnglet, scenarioActif, sansLeviersActif, changerLeviers }
+  // Réinitialisation : dernier préréglage choisi (ou reconnu, ou « complet »), variante de l'interrupteur, hypothèses avancées par défaut.
+  const presetReference = reconnu?.cle ?? dernierPreset
+  const reference = parametresDeReinitialisation(presetReference, sansLeviersActif)
+  const reinitialisable = !(memeParamsStrict(params, reference.params) && rho === reference.rho)
+  const reinitialiser = useCallback(() => {
+    setParams(reference.params)
+    setRho(reference.rho)
+    setDernierPreset(reference.cle)
+  }, [reference.params, reference.rho, reference.cle])
+
+  return { params, setParam, appliquerScenario, rho, setRho, onglet, setOnglet, scenarioActif, sansLeviersActif, changerLeviers, reinitialiser, reinitialisable }
 }

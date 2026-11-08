@@ -3,6 +3,7 @@ import type { Modele } from '../../state/useModele'
 import type { useSimulationParams } from '../../state/useSimulationParams'
 import { Cascade } from '../charts/Cascade'
 import { Courbes } from '../charts/Courbes'
+import { BoutonReinitialiser } from '../ui/BoutonReinitialiser'
 import { Carte } from '../ui/Carte'
 import { Segmented } from '../ui/Segmented'
 import { CurseursEconomie, CurseursLeviers } from './Curseurs'
@@ -35,7 +36,7 @@ function NoteDeficit({ t }: { t: Trajectoires }) {
 }
 
 export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) {
-  const { params, setParam, appliquerScenario, rho, setRho, scenarioActif, sansLeviersActif, changerLeviers, setOnglet } = etat
+  const { params, setParam, appliquerScenario, rho, setRho, scenarioActif, sansLeviersActif, changerLeviers, reinitialiser, reinitialisable, setOnglet } = etat
   const { resultat: r, trajectoires: t, soldesScenarios, soldesSansLeviers } = modele
   const gel = params.gelBcePct > 0
   return (
@@ -77,12 +78,17 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
           soldesSans={soldesSansLeviers}
           onChoisir={(c) => appliquerScenario(c, sansLeviersActif)}
           onChangerLeviers={changerLeviers}
+          onReinitialiser={reinitialiser}
+          reinitialisable={reinitialisable}
         />
       </Carte>
 
       <KpiCards modele={modele} params={params} />
 
       <div className="grid gap-5 lg:grid-cols-2">
+        <div className="flex justify-end lg:col-span-2 lg:-mb-2">
+          <BoutonReinitialiser onClick={reinitialiser} actif={reinitialisable} compact />
+        </div>
         <CurseursEconomie params={params} r={r} setParam={setParam} />
         <CurseursLeviers params={params} r={r} setParam={setParam} />
       </div>
