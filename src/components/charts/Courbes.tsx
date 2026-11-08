@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 import { fmtNombre } from '../../lib/format'
 import { useLargeurConteneur } from '../../lib/useLargeurConteneur'
 import { TableauDonnees } from '../ui/TableauDonnees'
@@ -23,11 +23,13 @@ interface Props {
   domaine?: [number, number]
   /** Pas de graduation de l'axe Y (sinon automatique). */
   pasGraduation?: number
+  /** Note discrète affichée sous le graphique. */
+  note?: ReactNode
 }
 
 const H = 260, L = 44, R = 14, T = 20, B = 30
 
-export function Courbes({ titre, description, annees, series, unite, decimales = 1, domaine, pasGraduation }: Props) {
+export function Courbes({ titre, description, annees, series, unite, decimales = 1, domaine, pasGraduation, note }: Props) {
   const id = useId()
   const [ref, W] = useLargeurConteneur<HTMLDivElement>()
   const toutes = series.flatMap((s) => s.valeurs.filter((v): v is number => v !== null))
@@ -87,6 +89,7 @@ export function Courbes({ titre, description, annees, series, unite, decimales =
         colonnes={['Année', ...series.map((s) => s.nom)]}
         lignes={annees.map((a, i) => [String(a), ...series.map((s) => (s.valeurs[i] === null ? '—' : fmtNombre(s.valeurs[i]!, decimales)))])}
       />
+      {note && <p className="mt-3 text-xs text-ink-soft">{note}</p>}
     </figure>
   )
 }
