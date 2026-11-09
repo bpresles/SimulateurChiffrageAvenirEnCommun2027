@@ -1,6 +1,7 @@
 import { SUBSTITUTION_IMPORTS } from '../data/filieres'
 import { hv } from '../data/hypotheses'
 import { ANNEE_RACHAT_ENGIE, COUT_RACHAT_ENGIE, MESURES_NULLES, effetElectricite, type MesuresHorsMoteur } from './electricite'
+import { BILAN_NUL, bilanMainOeuvre, depensesNouveauxHabitants, mainOeuvreDepuisParams, recettesRegularisation, type ParamsMainOeuvre } from './mainOeuvre'
 import { OPTIONS_PAR_DEFAUT, simuler } from './simulate'
 import type { ModelOptions, ResultatSimulation, SimulationParams } from './types'
 
@@ -19,20 +20,24 @@ import type { ModelOptions, ResultatSimulation, SimulationParams } from './types
  * réglable de 10 à 30) ; une part réglable seulement des prêts du pôle public bancaire est effectivement empruntée
  * (100 % par défaut), l'investissement financé par les prêts non empruntés n'a pas lieu (les subventions de l'État
  * restent dépensées).
+ * Contrainte de main-d'œuvre (voir mainOeuvre.ts) : les emplois directs que les chômeurs mobilisables du métier ne peuvent pas
+ * pourvoir sont pourvus par une nouvelle immigration de travail (la part non pourvue n'est pas créée : elle réduit d'autant les flux
+ * liés à l'investissement des filières). Les nouveaux habitants coûtent une dépense variable par habitant ; la régularisation,
+ * à partir de 2028, rapporte des cotisations sans effet sur le PIB.
  * Deux mesures s'ajoutent aux montants du moteur, sans le modifier : l'écart de prix de l'électricité (voir electricite.ts :
  * surcroît de PIB et effet direct sur le solde, de 2028 à 2028 + n − 1) et le rachat d'Engie (dette de 2028, sans effet
  * sur le solde ; le modèle ne calcule aucune charge d'intérêts).
  * Ils ajoutent au PIB un surcroît d'activité : effet de demande (investissements des filières × multiplicateur,
  * dépenses courantes, effet récessif des prélèvements) et, en option, effet d'offre durable (capital accumulé par les
- * filières × rendement, à partir de l'année suivant l'investissement, sans usure ; nul par défaut) et, en option,
- * report de la demande vers des produits français (le capital des filières de biens échangeables fait baisser la part
- * importée de la demande créée par le programme ; nul par défaut). Les recettes sur ce surcroît (taux réglable)
+ * filières × rendement r, à partir de l'année suivant l'investissement, sans usure ; r = 2 %/an par défaut, réglable de 0 à 20) et,
+ * en option, report de la demande vers des produits français (le capital des filières de biens échangeables fait baisser
+ * la part importée de la demande créée par le programme ; α = 0,45 par défaut, réglable de 0 à 2). Les recettes sur ce surcroît (taux réglable)
  * remplacent les retours fiscaux des filières, les retours sur dépenses courantes et l'effet récessif du moteur. Les
  * prélèvements nouveaux sont proportionnels au PIB avec programme ; les autres montants suivent l'inflation.
  *
  * Garde-fous automatiques du report de la demande : seules les filières retenues dans SUBSTITUTION_IMPORTS comptent ;
  * la part importée ne descend pas sous son plancher (11 %, S18) ; si l'effet d'offre et le report sont tous deux
- * positifs, seul le plus grand est retenu ; sans capital (ou à réglage nul), la trajectoire est inchangée.
+ * positifs, seul le plus grand est retenu (avec les valeurs par défaut, l'effet d'offre ; le report est alors mis à 0) ; sans capital (ou à réglage nul), la trajectoire est inchangée.
  */
 
 export const ANNEES = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035]
@@ -74,7 +79,11 @@ export interface EffetAnnuel {
   deltaPibSubstitution: number
   /** Surcroît de PIB dû à l'écart de prix de l'électricité (effet de niveau, années concernées seulement). */
   deltaPibElectricite: number
-  /** Électricité : baisse de la facture des consommateurs T (Md€ courants, négative si l'écart est négatif). */
+  /** Électricité : minoration du VNU du scénario sans programme (€/MWh consommé, euros 2027). */
+  electriciteMinorationVnu: number
+  /** Électricité : gain par MWh g = max(0, e − marge − minoration) (€/MWh, euros 2027). */
+  electriciteGainMwh: number
+  /** Électricité : baisse de la facture des consommateurs T (Md€ courants, jamais négative). */
   electriciteBaisseFacture: number
   /** Électricité : effet direct sur le solde, somme des trois lignes suivantes (−40 % × T). */
   electriciteDirect: number
@@ -106,6 +115,22 @@ export interface EffetAnnuel {
   depenses: number
   /** Frictions (montant positif, retranché). */
   frictions: number
+  /** Emplois directs du programme à pourvoir cette année, avant contrainte de main-d'œuvre (somme des trois lignes suivantes). */
+  emploisDirectsCrees: number
+  /** Emplois directs pourvus par des chômeurs du métier. */
+  emploisPourvusChomeurs: number
+  /** Emplois directs pourvus par des travailleurs immigrés (stock). */
+  travailleursImmigres: number
+  /** Emplois directs non créés, faute de chômeur ni de nouvel arrivant (stock). */
+  emploisNonCrees: number
+  /** Migrants nets supplémentaires par rapport au scénario central de l'Insee (stock). */
+  migrantsSupplementaires: number
+  /** Solde migratoire supplémentaire de l'année : variation du stock de migrants supplémentaires. */
+  soldeMigratoireSupplementaire: number
+  /** Dépenses des nouveaux habitants (montant positif, retranché). */
+  depensesNouveauxHabitants: number
+  /** Recettes de la régularisation : cotisations des personnes régularisées en emploi (à partir de 2028). */
+  recettesRegularisation: number
   /** Effet total sur le solde (hors rachat d'Engie, qui ne touche que la dette). */
   effet: number
 }
@@ -159,6 +184,7 @@ export const macroDepuisParams = (p: SimulationParams): HypothesesMacro => ({
 
 export const mesuresDepuisParams = (p: SimulationParams): MesuresHorsMoteur => ({
   ecartPrixElectricite: p.ecartPrixElectricite,
+  margeElectricite: p.margeElectricite,
   anneesEcartElectricite: p.anneesEcartElectricite,
   rachatEngie: p.rachatEngie,
 })
@@ -192,11 +218,13 @@ export interface ComposantesProgramme {
   bonification: number
   /** Solde calculé par le moteur, pour mémoire. */
   soldeMoteur: number
+  /** Emplois d'année pleine réalisés de chaque filière (identifiant de filière), avec la part des prêts empruntée. */
+  emploisParFiliere: Readonly<Record<string, number>>
 }
 
 export const COMPOSANTES_NULLES: ComposantesProgramme = {
   prelevements: 0, pibFilieres: 0, investissement: 0, investissementSubstitution: 0, pibDepensesCourantes: 0, pibRecessif: 0,
-  coutsEvites: 0, leviers: 0, depenses: 0, depensesInvestissement: 0, frictions: 0, bonification: 0, soldeMoteur: 0,
+  coutsEvites: 0, leviers: 0, depenses: 0, depensesInvestissement: 0, frictions: 0, bonification: 0, soldeMoteur: 0, emploisParFiliere: {},
 }
 
 /** Filières dont le capital peut remplacer des importations (garde-fou automatique du report de la demande). */
@@ -238,6 +266,8 @@ export function composantesProgramme(r: ResultatSimulation, multiplicateur: numb
     frictions: r.frictions.total - r.frictions.bonification + bonification,
     bonification,
     soldeMoteur: r.solde,
+    // Emplois de chaque filière au prorata de son investissement réalisé (comme les coûts évités).
+    emploisParFiliere: Object.fromEntries(r.agregat.details.map((d) => [d.id, d.invest > 0 ? (d.emplois * realise(d)) / d.invest : d.emplois])),
   }
 }
 
@@ -279,6 +309,7 @@ export function calculerTrajectoire(
   gelPct: number,
   m: HypothesesMacro = MACRO_PAR_DEFAUT,
   mesures: MesuresHorsMoteur = MESURES_NULLES,
+  mainOeuvre: ParamsMainOeuvre | null = null,
 ): ResultatTrajectoire {
   const inflation = m.inflationPct / 100
   const tauxRecettes = hv('tauxRecettesPubliques') / 100
@@ -298,13 +329,20 @@ export function calculerTrajectoire(
   // Capital accumulé par les filières (euros 2027) : il produit à partir de l'année suivant l'investissement.
   let capital2027 = 0
   let capitalSubstitution2027 = 0
+  // Migrants nets supplémentaires de l'année précédente (stock), pour le solde migratoire supplémentaire.
+  let migrantsPrec = 0
   for (const annee of ANNEES) {
     const prix = Math.pow(1 + inflation, annee - ANNEE_EUROS)
     const montant = (f: (c: ComposantesProgramme) => number) => effetProgramme(annee, f(an1), f(ap)) * prix
     // Flux liés à l'investissement des filières : nuls en 2026-2027, puis étalés sur D ans à partir de 2028.
     const montantInvest = (f: (c: ComposantesProgramme) => number) => rythmeInvestissement(annee, f(ap), m.dureeMonteeInvestissement) * prix
 
-    const deltaPibFilieres = montantInvest((c) => c.pibFilieres)
+    // Contrainte de main-d'œuvre : la part non pourvue des emplois directs n'est pas créée et réduit d'autant les flux
+    // liés à l'investissement des filières (les dépenses de l'État et la bonification restent inchangées).
+    const bilan = mainOeuvre ? bilanMainOeuvre(ap.emploisParFiliere, rythmeInvestissement(annee, 1, m.dureeMonteeInvestissement), mainOeuvre) : BILAN_NUL
+    const realisee = 1 - bilan.partNonRealisee
+
+    const deltaPibFilieres = montantInvest((c) => c.pibFilieres) * realisee
     const deltaPibDepensesCourantes = montant((c) => c.pibDepensesCourantes)
     const deltaPibRecessif = montant((c) => c.pibRecessif)
     const pib0 = pibTendanciel(annee, m)
@@ -334,11 +372,15 @@ export function calculerTrajectoire(
     // Taux des prélèvements nouveaux = montant (euros 2027) / PIB tendanciel 2027, appliqué au PIB avec programme.
     const prelevements = (effetProgramme(annee, an1.prelevements, ap.prelevements) / pibRef) * pib
     const recettesInduites = tauxInduit * deltaPib
-    const coutsEvites = montantInvest((c) => c.coutsEvites)
+    const coutsEvites = montantInvest((c) => c.coutsEvites) * realisee
     const leviers = montant((c) => c.leviers)
     const depenses = montant((c) => c.depenses - c.depensesInvestissement) + montantInvest((c) => c.depensesInvestissement)
     const frictions = montant((c) => c.frictions - c.bonification) + montantInvest((c) => c.bonification)
-    const effet = prelevements + recettesInduites + coutsEvites + leviers - depenses - frictions + elec.soldeDirect
+    // Nouveaux habitants : dépense variable par habitant (leurs recettes passent déjà par le taux sur le surcroît de PIB).
+    const depensesHabitants = depensesNouveauxHabitants(bilan.migrantsSupplementaires, pib0)
+    // Régularisation à partir de 2028 : cotisations, sans effet sur le PIB ni dépense nouvelle modélisée.
+    const recettesRegul = mainOeuvre && annee > ANNEE_EUROS ? recettesRegularisation(mainOeuvre.effectifRegularisation, pib0) : 0
+    const effet = prelevements + recettesInduites + coutsEvites + leviers - depenses - frictions + elec.soldeDirect - depensesHabitants + recettesRegul
 
     const recettesTendancielles = tauxRecettes * pib0
     const depensesTendancielles = tauxDepenses2026 * pib0 * Math.pow(facteurEcart, annee - 2026)
@@ -361,15 +403,20 @@ export function calculerTrajectoire(
     })
     effets.push({
       annee, deltaPib, deltaPibFilieres, deltaPibDepensesCourantes, deltaPibRecessif, deltaPibOffre, deltaPibSubstitution,
-      deltaPibElectricite, electriciteBaisseFacture: elec.baisseFacture, electriciteDirect: elec.soldeDirect,
+      deltaPibElectricite, electriciteMinorationVnu: elec.minorationVnu, electriciteGainMwh: elec.gainParMwh, electriciteBaisseFacture: elec.baisseFacture, electriciteDirect: elec.soldeDirect,
       electriciteIs: elec.impotSocietes, electriciteDividende: elec.dividende, electriciteTva: elec.tva, rachatEngie,
       capital, capitalSubstitution, partImporteePct: partImportee * 100, plancherAtteint: partVisee < partImporteeMin, gainEcarte,
-      prelevements, recettesInduites, coutsEvites, leviers, depenses, frictions, effet,
+      prelevements, recettesInduites, coutsEvites, leviers, depenses, frictions,
+      emploisDirectsCrees: bilan.emploisDirectsCrees, emploisPourvusChomeurs: bilan.emploisPourvusChomeurs,
+      travailleursImmigres: bilan.travailleursImmigres, emploisNonCrees: bilan.emploisNonCrees,
+      migrantsSupplementaires: bilan.migrantsSupplementaires, soldeMigratoireSupplementaire: bilan.migrantsSupplementaires - migrantsPrec,
+      depensesNouveauxHabitants: depensesHabitants, recettesRegularisation: recettesRegul, effet,
     })
+    migrantsPrec = bilan.migrantsSupplementaires
     pibPrec = pib
     dettePrec = dette
-    capital2027 += rythmeInvestissement(annee, ap.investissement, m.dureeMonteeInvestissement)
-    capitalSubstitution2027 += rythmeInvestissement(annee, ap.investissementSubstitution, m.dureeMonteeInvestissement)
+    capital2027 += rythmeInvestissement(annee, ap.investissement, m.dureeMonteeInvestissement) * realisee
+    capitalSubstitution2027 += rythmeInvestissement(annee, ap.investissementSubstitution, m.dureeMonteeInvestissement) * realisee
   }
   return { points, effets }
 }
@@ -393,7 +440,7 @@ export function trajectoiresPourParams(
   const composantesAn1 = composantesProgramme(simuler({ ...params, horizon: 'an1' }, options), params.multiplicateur, partPrets)
   const composantesAP = composantesProgramme(simuler({ ...params, horizon: 'anneePleine' }, options), params.multiplicateur, partPrets)
   const m = macroDepuisParams(params)
-  const programme = calculerTrajectoire(composantesAn1, composantesAP, params.gelBcePct, m, mesuresDepuisParams(params))
+  const programme = calculerTrajectoire(composantesAn1, composantesAP, params.gelBcePct, m, mesuresDepuisParams(params), mainOeuvreDepuisParams(params))
   const tendanciel = calculerTrajectoire(COMPOSANTES_NULLES, COMPOSANTES_NULLES, 0, m)
   return { programme: programme.points, tendanciel: tendanciel.points, effets: programme.effets, composantesAn1, composantesAP }
 }

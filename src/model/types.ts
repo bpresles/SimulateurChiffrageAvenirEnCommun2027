@@ -41,12 +41,20 @@ export interface SimulationParams {
   partPretsUtilisesPct: number
   /** 10..30 : durée (années) de montée en charge de l'investissement des filières, nul en 2026-2027 puis linéaire à partir de 2028, trajectoires seulement. */
   dureeMonteeInvestissement: number
-  /** −20..100 : écart entre le prix de marché tendanciel et le coût moyen de production de l'électricité (€/MWh, euros 2027, indexé sur les prix), trajectoires seulement. */
+  /** 0..100 : écart entre le prix de marché tendanciel et le coût complet du nucléaire historique (€/MWh, euros 2027, indexé sur les prix), trajectoires seulement. */
   ecartPrixElectricite: number
+  /** 0..25 : marge du monopole public au-dessus du coût complet (€/MWh, euros 2027), 16,5 par défaut ; elle reste à EDF, trajectoires seulement. */
+  margeElectricite: number
   /** 1..8 : nombre d'années concernées par cet écart, à partir de 2028, trajectoires seulement. */
   anneesEcartElectricite: number
   /** Rachat en 2028 des actions d'Engie non détenues par l'État : accroît la dette, pas le déficit, trajectoires seulement. */
   rachatEngie: boolean
+  /** 10..50 : part des demandeurs d'emploi ABC de chaque groupe de métiers mobilisables pour les emplois créés (%), trajectoires seulement. */
+  partChomeursMobilisablesPct: number
+  /** 0..100 : part des emplois manquants pourvus par une nouvelle immigration de travail (%) ; le reste n'est pas créé, trajectoires seulement. */
+  partEmploisManquantsImmigrationPct: number
+  /** 0..700 000 : personnes régularisées à partir de 2028, trajectoires seulement. */
+  effectifRegularisation: number
 }
 
 export interface ModelOptions {

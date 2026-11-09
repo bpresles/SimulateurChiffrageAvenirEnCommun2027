@@ -14,21 +14,20 @@ export default function App() {
   const etat = useSimulationParams()
   const modele = useModele(etat.params, etat.rho)
   const { theme, basculer } = useTheme()
-  const horizonLabel = etat.params.horizon === 'an1' ? 'An 1' : 'année pleine'
   const { onglet } = etat
   return (
     <>
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:text-ink focus:px-3 focus:py-2">
         Aller au contenu
       </a>
-      <EnTete onglet={onglet} onChange={etat.setOnglet} solde={modele.resultat.solde} horizonLabel={horizonLabel} theme={theme} onBasculerTheme={basculer} />
+      <EnTete onglet={onglet} onChange={etat.setOnglet} solde={modele.resultat.solde} theme={theme} onBasculerTheme={basculer} />
       <main id="contenu" className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div role="tabpanel" id={idPanneau(onglet)} aria-labelledby={idOnglet(onglet)} tabIndex={0}>
           {onglet === 'simulateur' && <SimulateurTab etat={etat} modele={modele} />}
           {onglet === 'filieres' && <FilieresTab params={etat.params} modele={modele} />}
           {onglet === 'leviers' && <LeviersTab resultat={modele.resultat} />}
           {onglet === 'matrice' && <MatriceTab />}
-          {onglet === 'methodologie' && <MethodologieTab modele={modele} horizonLabel={horizonLabel} />}
+          {onglet === 'methodologie' && <MethodologieTab modele={modele} />}
         </div>
       </main>
       <PiedDePage />

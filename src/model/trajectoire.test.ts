@@ -2,7 +2,8 @@ import { describe, expect, it } from 'bun:test'
 import { FILIERES, SUBSTITUTION_IMPORTS } from '../data/filieres'
 import { hv } from '../data/hypotheses'
 import { SCENARIOS } from '../data/scenarios'
-import { COUT_RACHAT_ENGIE, MESURES_NULLES, MULTIPLICATEUR_PIB, PART_DIRECTE, MD_PAR_EUR_MWH, type MesuresHorsMoteur } from './electricite'
+import { COUT_RACHAT_ENGIE, MESURES_NULLES, PART_NUCLEAIRE, SEUIL_ECRETEMENT_VNU, SEUIL_TAXATION_VNU, gainParMwh, minorationVnu, MULTIPLICATEUR_PIB, PART_DIRECTE, MD_PAR_EUR_MWH, type MesuresHorsMoteur } from './electricite'
+import { mainOeuvreDepuisParams, partDirecteEmplois } from './mainOeuvre'
 import { simuler } from './simulate'
 import {
   ANNEES,
@@ -24,6 +25,8 @@ import {
 } from './trajectoire'
 
 const complet = SCENARIOS.find((s) => s.cle === 'complet')!.params
+/** Préréglage complet sans effet d'offre ni report : isole l'effet de demande (réglages explicitement à 0). */
+const sansCapital = { ...complet, rendementCapitalPct: 0, substitutionImports: 0 }
 const macro = (m: Partial<HypothesesMacro>): HypothesesMacro => ({ ...MACRO_PAR_DEFAUT, ...m })
 /** Ni croissance réelle (aucune année prévue, long terme nul) ni inflation. */
 const FIGE = { croissancePrevuePct: {}, croissanceLongTermePct: 0, inflationPct: 0 }
@@ -117,21 +120,22 @@ describe('tous les facteurs du moteur sont repris', () => {
   it('à 35 centimes par euro, retours courants et effet récessif égalent ceux du moteur', () => {
     const r = simuler({ ...complet, horizon: 'anneePleine' })
     const c = composantesProgramme(r, complet.multiplicateur)
-    const m = macro({ ...FIGE, tauxRecettesActivitePct: 35 })
+    const m = macro({ ...FIGE, tauxRecettesActivitePct: 35, rendementCapitalPct: 0, substitutionImports: 0 })
     const e = annee(calculerTrajectoire(COMPOSANTES_NULLES, { ...c, pibFilieres: 0, investissement: 0 }, 0, m).effets, 2030)
     expect(e.recettesInduites).toBeCloseTo(r.retoursCourants + r.effetRecessif, 9)
   })
 })
 
 describe('trajectoire avec le programme', () => {
-  const t = trajectoiresPourParams(complet)
+  const t = trajectoiresPourParams(sansCapital)
   it('recettes sur le surcroît d’activité = taux × surcroît de PIB, effet = somme des lignes', () => {
     for (const e of t.effets) {
       expect(e.recettesInduites).toBeCloseTo((complet.tauxRecettesActivitePct / 100) * e.deltaPib, 9)
       expect(e.deltaPib).toBeCloseTo(
         e.deltaPibFilieres + e.deltaPibDepensesCourantes + e.deltaPibRecessif + e.deltaPibOffre + e.deltaPibSubstitution + e.deltaPibElectricite, 9)
       expect(e.effet).toBeCloseTo(
-        e.prelevements + e.recettesInduites + e.coutsEvites + e.leviers - e.depenses - e.frictions + e.electriciteDirect, 9)
+        e.prelevements + e.recettesInduites + e.coutsEvites + e.leviers - e.depenses - e.frictions + e.electriciteDirect
+          - e.depensesNouveauxHabitants + e.recettesRegularisation, 9)
     }
     for (const a of ANNEES) {
       expect(annee(t.programme, a).solde - annee(t.tendanciel, a).solde).toBeCloseTo(annee(t.effets, a).effet, 9)
@@ -141,22 +145,25 @@ describe('trajectoire avec le programme', () => {
   it('2027 reprend l’An 1 en euros 2027, les années suivantes sont indexées sur l’inflation', () => {
     const e27 = annee(t.effets, 2027)
     expect(e27.depenses).toBeCloseTo(t.composantesAn1.depenses, 9)
-    expect(annee(t.effets, 2032).depenses).toBeCloseTo(t.composantesAP.depenses * Math.pow(1.015, 5), 9)
+    const prix = Math.pow(1 + complet.inflationPct / 100, 5)
+    const ap = t.composantesAP
+    const rythme = Math.min(1, (2032 - 2027) / complet.dureeMonteeInvestissement)
+    expect(annee(t.effets, 2032).depenses).toBeCloseTo((ap.depenses - ap.depensesInvestissement) * prix + ap.depensesInvestissement * rythme * prix, 9)
   })
   it('prélèvements nouveaux proportionnels au PIB avec programme', () => {
     const taux = (a: number) => annee(t.effets, a).prelevements / annee(t.programme, a).pib
     expect(taux(2031)).toBeCloseTo(taux(2030), 12)
     expect(taux(2030)).toBeCloseTo(t.composantesAP.prelevements / pibTendanciel(2027), 12)
   })
-  it('par défaut, effet de demande seul (effet durable nul, S17) : la croissance reste au-dessus de la tendance pendant toute la montée en charge de 10 ans', () => {
-    expect(complet.rendementCapitalPct).toBe(0)
+  it('r = 0 (réglage explicite), effet de demande seul : la croissance reste au-dessus de la tendance pendant toute la montée en charge de 10 ans', () => {
+    expect(sansCapital.rendementCapitalPct).toBe(0)
     expect(complet.dureeMonteeInvestissement).toBe(10)
     expect(annee(t.programme, 2026).croissanceReellePct).toBeCloseTo(0.4, 9)
     // L'investissement des filières monte en charge de 2028 à 2037 : au-delà de l'horizon, la croissance reste au-dessus de la tendance.
     for (const a of [2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035])
       expect(annee(t.programme, a).croissanceReellePct).toBeGreaterThan(annee(t.tendanciel, a).croissanceReellePct)
     // Rythme complet atteint dans l'horizon (D = 5, via le moteur) : la croissance revient ensuite vers la tendance.
-    const court = calculerTrajectoire(t.composantesAn1, t.composantesAP, 0, macro({ dureeMonteeInvestissement: 5 }))
+    const court = calculerTrajectoire(t.composantesAn1, t.composantesAP, 0, macro({ dureeMonteeInvestissement: 5, rendementCapitalPct: 0, substitutionImports: 0 }))
     for (const a of [2033, 2034, 2035]) {
       expect(annee(court.points, a).croissanceReellePct).toBeGreaterThan(annee(t.tendanciel, a).croissanceReellePct - 0.1)
       expect(annee(court.points, a).croissanceReellePct).toBeLessThanOrEqual(annee(t.tendanciel, a).croissanceReellePct)
@@ -246,8 +253,8 @@ describe('trajectoire avec le programme', () => {
   })
 })
 
-describe('report de la demande vers des produits français (option, garde-fous automatiques)', () => {
-  const t = trajectoiresPourParams(complet)
+describe('report de la demande vers des produits français (garde-fous automatiques)', () => {
+  const t = trajectoiresPourParams(sansCapital)
   const mu0 = hv('partImporteeDemande') / 100
   const muMin = hv('partImporteeMin') / 100
   const demande = (e: { deltaPibFilieres: number; deltaPibDepensesCourantes: number; deltaPibRecessif: number }) =>
@@ -272,8 +279,27 @@ describe('report de la demande vers des produits français (option, garde-fous a
     const e = calculerTrajectoire({ ...t.composantesAn1, investissementSubstitution: 0 }, sansEligibles, 0, macro({ substitutionImports: 2 })).effets
     for (const x of e) expect(x.deltaPibSubstitution).toBe(0)
   })
-  it('garde-fou : à réglage nul (par défaut), la trajectoire est exactement celle sans report', () => {
-    expect(complet.substitutionImports).toBe(0)
+  it('valeurs par défaut : r = 2 %, α = 0,45 ; l’effet d’offre est retenu et le report est écarté', () => {
+    expect(complet.rendementCapitalPct).toBe(2)
+    expect(complet.substitutionImports).toBe(0.45)
+    const d = trajectoiresPourParams(complet)
+    const seul = trajectoiresPourParams({ ...complet, rendementCapitalPct: 0 })
+    let ecartes = 0
+    for (const a of ANNEES) {
+      const e = annee(d.effets, a)
+      const report = annee(seul.effets, a).deltaPibSubstitution
+      if (e.deltaPibOffre > 0 && report > 0) {
+        ecartes++
+        expect(e.gainEcarte).toBe('substitution')
+        expect(e.deltaPibSubstitution).toBe(0)
+        expect(e.deltaPibOffre).toBeGreaterThan(report)
+      }
+    }
+    expect(ecartes).toBeGreaterThan(0)
+    expect(annee(d.effets, 2032).deltaPibOffre).toBeCloseTo(0.02 * annee(d.effets, 2032).capital, 9)
+  })
+  it('garde-fou : à α = 0 (réglage explicite), la trajectoire est exactement celle sans report', () => {
+    expect(sansCapital.substitutionImports).toBe(0)
     for (const e of t.effets) {
       expect(e.deltaPibSubstitution).toBe(0)
       expect(e.partImporteePct).toBeCloseTo(22, 12)
@@ -282,7 +308,7 @@ describe('report de la demande vers des produits français (option, garde-fous a
     }
   })
   it('la part importée baisse avec le capital de l’année précédente ; le gain vaut (facteur − 1) × effets de demande', () => {
-    const p = { ...complet, substitutionImports: 1 }
+    const p = { ...sansCapital, substitutionImports: 1 }
     const s = trajectoiresPourParams(p)
     const m = macroDepuisParams(p)
     let cumul = 0
@@ -314,8 +340,8 @@ describe('report de la demande vers des produits français (option, garde-fous a
     for (const x of e) expect(x.partImporteePct).toBeGreaterThanOrEqual(11 - 1e-9)
   })
   it('garde-fou : effet d’offre et report tous deux positifs, seul le plus grand compte', () => {
-    const offre = trajectoiresPourParams({ ...complet, rendementCapitalPct: 5 })
-    const report = trajectoiresPourParams({ ...complet, substitutionImports: 2 })
+    const offre = trajectoiresPourParams({ ...complet, rendementCapitalPct: 5, substitutionImports: 0 })
+    const report = trajectoiresPourParams({ ...complet, rendementCapitalPct: 0, substitutionImports: 2 })
     const lesDeux = trajectoiresPourParams({ ...complet, rendementCapitalPct: 5, substitutionImports: 2 })
     let ecartes = 0
     for (const a of ANNEES) {
@@ -455,12 +481,13 @@ describe('électricité à prix régulé (trajectoires seulement)', () => {
       expect(u.programme).toEqual(base.programme)
     }
   })
-  it('écart positif : baisse de facture T = écart × 0,451 Md€, ΔPIB = 0,14 T, effet direct −40 % T, plus θ × ΔPIB', () => {
+  it('écart supérieur à la marge : baisse de facture T = g × 0,451 Md€, ΔPIB = 0,14 T, effet direct −40 % T, plus θ × ΔPIB', () => {
     const u = avec(48)
     for (const a of [2028, 2029]) {
       const e = annee(u.effets, a)
       const b = annee(base.effets, a)
-      const T = 48 * 0.451 * prix(a)
+      const T = gainParMwh(48, 16.5) * 0.451 * prix(a)
+      expect(T).toBeGreaterThan(0)
       expect(MD_PAR_EUR_MWH).toBeCloseTo(0.451, 12)
       expect(e.electriciteBaisseFacture).toBeCloseTo(T, 9)
       expect(e.deltaPibElectricite).toBeCloseTo(0.14 * T, 9)
@@ -488,9 +515,11 @@ describe('électricité à prix régulé (trajectoires seulement)', () => {
   })
   it('en euros 2027 indexé sur les prix : la baisse de facture en euros courants suit l’inflation', () => {
     const u = avec(48, 3)
-    expect(annee(u.effets, 2030).electriciteBaisseFacture).toBe(0)
-    expect(annee(u.effets, 2030).electriciteBaisseFacture).toBe(0)
-    expect(annee(u.effets, 2029).electriciteBaisseFacture / annee(u.effets, 2028).electriciteBaisseFacture).toBeCloseTo(1 + complet.inflationPct / 100, 12)
+    expect(annee(u.effets, 2027).electriciteBaisseFacture).toBe(0)
+    expect(annee(u.effets, 2031).electriciteBaisseFacture).toBe(0)
+    const f = (a: number) => annee(u.effets, a).electriciteBaisseFacture
+    expect(f(2029) / f(2028)).toBeCloseTo(1 + complet.inflationPct / 100, 12)
+    expect(f(2030) / f(2029)).toBeCloseTo(1 + complet.inflationPct / 100, 12)
   })
   it('le nombre d’années concernées commence en 2028', () => {
     const u = avec(30, 3)
@@ -498,20 +527,57 @@ describe('électricité à prix régulé (trajectoires seulement)', () => {
     const v = avec(30, 8)
     expect(ANNEES.filter((a) => annee(v.effets, a).electriciteBaisseFacture !== 0)).toEqual([2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035])
   })
-  it('effet symétrique : un écart négatif inverse tous les signes', () => {
-    const plus = avec(20)
-    const moins = avec(-20)
-    for (const a of [2028, 2029]) {
-      const p = annee(plus.effets, a)
-      const m = annee(moins.effets, a)
-      expect(m.electriciteBaisseFacture).toBeCloseTo(-p.electriciteBaisseFacture, 9)
-      expect(m.deltaPibElectricite).toBeCloseTo(-p.deltaPibElectricite, 9)
-      expect(m.electriciteDirect).toBeCloseTo(-p.electriciteDirect, 9)
-      expect(m.deltaPibElectricite).toBeLessThan(0)
-      expect(m.electriciteDirect).toBeGreaterThan(0)
-    }
+  it('constantes du VNU : seuils en écart au coût complet et part du nucléaire', () => {
+    expect(SEUIL_TAXATION_VNU).toBeCloseTo(16.5, 12)
+    expect(SEUIL_ECRETEMENT_VNU).toBeCloseTo(48.5, 12)
+    expect(PART_NUCLEAIRE).toBeCloseTo(362 / 451, 12)
+    expect(complet.margeElectricite).toBeCloseTo(16.5, 12)
   })
-  it('l’effet direct sur le solde est défavorable (écart positif) et l’effet net reste inférieur à l’effet de la baisse de facture', () => {
+  it('écart inférieur ou égal à la marge, ou négatif : aucun effet (le prix régulé est plafonné)', () => {
+    for (const e of [-20, -1, 0, 5, 16.5]) {
+      expect(gainParMwh(e, 16.5)).toBe(0)
+      const u = avec(e)
+      expect(u.effets).toEqual(base.effets)
+      expect(u.programme).toEqual(base.programme)
+    }
+    expect(annee(avec(16.5).effets, 2028).electriciteBaisseFacture).toBe(0)
+    expect(annee(avec(-20).effets, 2028).deltaPibElectricite).toBe(0)
+    expect(annee(avec(-20).effets, 2028).electriciteDirect).toBe(0)
+  })
+  it('zone à 50 % (e = 30, m = 16,5) : g = 13,5 × (1 − 0,5 k)', () => {
+    const k = 362 / 451
+    expect(minorationVnu(30)).toBeCloseTo(0.5 * k * 13.5, 12)
+    expect(gainParMwh(30, 16.5)).toBeCloseTo(13.5 * (1 - 0.5 * k), 12)
+    const e = annee(avec(30).effets, 2028)
+    expect(e.electriciteMinorationVnu).toBeCloseTo(0.5 * k * 13.5, 12)
+    expect(e.electriciteGainMwh).toBeCloseTo(13.5 * (1 - 0.5 * k), 12)
+    expect(e.electriciteBaisseFacture).toBeCloseTo(13.5 * (1 - 0.5 * k) * 0.451 * prix(2028), 9)
+  })
+  it('zone à 90 % (e = 80, m = 16,5)', () => {
+    const k = 362 / 451
+    const v = k * (0.5 * (48.5 - 16.5) + 0.9 * (80 - 48.5))
+    expect(minorationVnu(80)).toBeCloseTo(v, 12)
+    expect(gainParMwh(80, 16.5)).toBeCloseTo(80 - 16.5 - v, 12)
+    expect(annee(avec(80).effets, 2029).electriciteBaisseFacture).toBeCloseTo((80 - 16.5 - v) * 0.451 * prix(2029), 9)
+  })
+  it('la minoration est continue aux seuils et croissante', () => {
+    expect(minorationVnu(16.5)).toBe(0)
+    expect(minorationVnu(48.5)).toBeCloseTo((362 / 451) * 0.5 * 32, 12)
+    expect(minorationVnu(48.5 + 1e-9)).toBeCloseTo(minorationVnu(48.5), 6)
+    expect(minorationVnu(100)).toBeGreaterThan(minorationVnu(60))
+  })
+  it('marge nulle et e = 10 : pas de minoration, g = 10', () => {
+    expect(minorationVnu(10)).toBe(0)
+    expect(gainParMwh(10, 0)).toBe(10)
+    const u = avec(10, 2, { margeElectricite: 0 })
+    expect(annee(u.effets, 2028).electriciteBaisseFacture).toBeCloseTo(10 * 0.451 * prix(2028), 9)
+  })
+  it('la marge réduit le gain', () => {
+    const t = (m: number) => annee(avec(40, 2, { margeElectricite: m }).effets, 2028).electriciteBaisseFacture
+    expect(t(0)).toBeGreaterThan(t(16.5))
+    expect(t(16.5)).toBeGreaterThan(t(25))
+  })
+  it('l’effet direct sur le solde est défavorable (gain positif) et l’effet net reste inférieur à l’effet de la baisse de facture', () => {
     const u = avec(48)
     expect(annee(u.programme, 2028).solde).toBeLessThan(annee(base.programme, 2028).solde)
     expect(annee(u.programme, 2029).solde).toBeLessThan(annee(base.programme, 2029).solde)
@@ -541,7 +607,80 @@ describe('rachat d’Engie (trajectoires seulement)', () => {
   it('désactivé, la trajectoire est celle sans mesure hors moteur ; par défaut, la case est cochée', () => {
     expect(complet.rachatEngie).toBe(true)
     expect(mesuresDepuisParams({ ...complet, rachatEngie: false })).toEqual({ ...MESURES_NULLES, rachatEngie: false } satisfies MesuresHorsMoteur)
-    const direct = calculerTrajectoire(sans.composantesAn1, sans.composantesAP, complet.gelBcePct, macroDepuisParams(complet))
+    const direct = calculerTrajectoire(sans.composantesAn1, sans.composantesAP, complet.gelBcePct, macroDepuisParams(complet), mesuresDepuisParams({ ...complet, rachatEngie: false }), mainOeuvreDepuisParams(complet))
     expect(direct.points).toEqual(sans.programme)
+  })
+})
+
+describe('contrainte de main-d’œuvre, immigration de travail et régularisation', () => {
+  const avec = (p: Partial<typeof complet>) => trajectoiresPourParams({ ...complet, ...p })
+  const base = avec({})
+  const final = (t: ReturnType<typeof avec>, a = 2035) => annee(t.effets, a)
+
+  it('bouclage : effet = somme des lignes, y compris les dépenses des nouveaux habitants et la régularisation', () => {
+    for (const p of [{}, { partEmploisManquantsImmigrationPct: 0 }, { partChomeursMobilisablesPct: 50, effectifRegularisation: 700000 }]) {
+      for (const e of avec(p).effets)
+        expect(e.effet).toBeCloseTo(
+          e.prelevements + e.recettesInduites + e.coutsEvites + e.leviers - e.depenses - e.frictions + e.electriciteDirect
+          - e.depensesNouveauxHabitants + e.recettesRegularisation, 9)
+    }
+  })
+  it('emplois directs = pourvus par des chômeurs + travailleurs immigrés + emplois non créés', () => {
+    for (const p of [{}, { partEmploisManquantsImmigrationPct: 40 }]) {
+      for (const e of avec(p).effets)
+        expect(e.emploisDirectsCrees).toBeCloseTo(e.emploisPourvusChomeurs + e.travailleursImmigres + e.emploisNonCrees, 6)
+    }
+  })
+  it('φ = 100 % : le PIB est celui du modèle sans contrainte ; seuls les dépenses des nouveaux habitants et les recettes de la régularisation changent', () => {
+    const sansContrainte = calculerTrajectoire(base.composantesAn1, base.composantesAP, complet.gelBcePct, macroDepuisParams(complet), mesuresDepuisParams(complet))
+    for (const a of ANNEES) {
+      expect(annee(base.programme, a).pib).toBeCloseTo(annee(sansContrainte.points, a).pib, 9)
+      const e = annee(base.effets, a)
+      expect(annee(base.programme, a).solde - annee(sansContrainte.points, a).solde).toBeCloseTo(e.recettesRegularisation - e.depensesNouveauxHabitants, 9)
+      expect(e.emploisNonCrees).toBe(0)
+    }
+    expect(final(base).depensesNouveauxHabitants).toBeGreaterThan(0)
+  })
+  it('φ = 0 : PIB plus bas, aucun migrant, des emplois non créés', () => {
+    const zero = avec({ partEmploisManquantsImmigrationPct: 0 })
+    for (const a of ANNEES.filter((x) => x >= 2029)) {
+      expect(annee(zero.programme, a).pib).toBeLessThan(annee(base.programme, a).pib)
+      expect(annee(zero.effets, a).migrantsSupplementaires).toBe(0)
+      expect(annee(zero.effets, a).depensesNouveauxHabitants).toBe(0)
+    }
+    expect(final(zero).emploisNonCrees).toBeGreaterThan(0)
+    expect(final(zero).travailleursImmigres).toBe(0)
+  })
+  it('k = 50 % : moins de migrants qu’à k = 25 %', () => {
+    const k50 = avec({ partChomeursMobilisablesPct: 50 })
+    expect(final(k50).migrantsSupplementaires).toBeLessThan(final(base).migrantsSupplementaires)
+    expect(final(avec({ partChomeursMobilisablesPct: 10 })).migrantsSupplementaires).toBeGreaterThan(final(base).migrantsSupplementaires)
+  })
+  it('régularisation : nulle sans effectif, proportionnelle à l’effectif, à partir de 2028, sans effet sur le PIB', () => {
+    const nul = avec({ effectifRegularisation: 0 })
+    const demi = avec({ effectifRegularisation: 205000 })
+    for (const e of nul.effets) expect(e.recettesRegularisation).toBe(0)
+    for (const a of ANNEES) {
+      expect(annee(base.effets, a).recettesRegularisation).toBeCloseTo(2 * annee(demi.effets, a).recettesRegularisation, 9)
+      expect(annee(base.programme, a).pib).toBeCloseTo(annee(nul.programme, a).pib, 9)
+    }
+    expect(annee(base.effets, 2027).recettesRegularisation).toBe(0)
+    expect(annee(base.effets, 2028).recettesRegularisation).toBeGreaterThan(0)
+    // 410 000 × 4 960 € ≈ 2,0 Md€ en euros 2025.
+    const pibRel = pibTendanciel(2028) / hv('pib2025')
+    expect(annee(base.effets, 2028).recettesRegularisation / pibRel).toBeCloseTo(2.03, 1)
+  })
+  it('part directe des emplois : 65 % au multiplicateur de référence', () => {
+    expect(partDirecteEmplois(1.45)).toBeCloseTo(0.65, 9)
+    expect(partDirecteEmplois(1.05)).toBeGreaterThan(0.65)
+  })
+  it('contrôle V2 de la recherche : k = 25 %, φ = 100 %, D = 10, prêts à 100 %, multiplicateur 1,45', () => {
+    const t = avec({ partChomeursMobilisablesPct: 25, dureeMonteeInvestissement: 10, partPretsUtilisesPct: 100, multiplicateur: 1.45 })
+    const attendu: Record<number, number> = { 2028: 0, 2029: 5300, 2030: 33800, 2031: 56500, 2032: 70900, 2033: 77300, 2034: 83500, 2035: 83500 }
+    for (const [a, v] of Object.entries(attendu)) {
+      const reel = annee(t.effets, Number(a)).soldeMigratoireSupplementaire
+      // La recherche arrondit à la centaine ; le moteur donne exactement 1 035 000 emplois : écart d’arrondi seulement.
+      expect(Math.abs(reel - v)).toBeLessThanOrEqual(50)
+    }
   })
 })

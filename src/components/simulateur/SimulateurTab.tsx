@@ -5,13 +5,12 @@ import { Cascade } from '../charts/Cascade'
 import { Courbes } from '../charts/Courbes'
 import { BoutonReinitialiser } from '../ui/BoutonReinitialiser'
 import { Carte } from '../ui/Carte'
-import { Segmented } from '../ui/Segmented'
 import { CurseursEconomie, CurseursLeviers } from './Curseurs'
 import { HypothesesAvancees } from './HypothesesAvancees'
 import { KpiCards } from './KpiCards'
 import { Presets } from './Presets'
 import { ANNEES, ameliorationDeficit, type Trajectoires } from '../../model/trajectoire'
-import type { Horizon, SimulationParams } from '../../model/types'
+import type { SimulationParams } from '../../model/types'
 import { hv } from '../../data/hypotheses'
 
 type Etat = ReturnType<typeof useSimulationParams>
@@ -75,9 +74,9 @@ function NoteCroissance({ t, rendementPct, substitution, dureeInvest }: { t: Tra
         <>
           Le rythme complet de l’investissement des filières n’est atteint qu’en {2027 + dureeInvest}, après l’horizon des trajectoires : jusqu’en {fin},
           la croissance reste portée par cette montée en charge. À programme constant, le PIB garde ensuite son écart et sa croissance revient vers le
-          rythme tendanciel. L’effet durable des investissements sur les capacités
-          de production est réglé à 0 par défaut, car une partie des investissements de transition remplace des équipements existants sans accroître les
-          capacités (Pisani-Ferry et Mahfouz, S17). Hypothèse réglable dans les hypothèses avancées.
+          rythme tendanciel. L’effet durable des investissements sur les capacités de production est réglé à 0 : le surcroît de PIB vient de la seule demande.
+          Hypothèse réglable dans les hypothèses avancées (2 % par défaut, rendement moyen des filières qui créent des capacités ; une partie des
+          investissements de transition remplace des équipements existants sans accroître les capacités, Pisani-Ferry et Mahfouz, S17).
         </>
       )}
       {substitution > 0 && <NoteReport t={t} />}
@@ -106,6 +105,8 @@ function DecompositionEffet({ t, params }: { t: Trajectoires; params: Simulation
     ['Leviers monétaires et financiers', (e) => e.leviers],
     ['Électricité à prix régulé : effet direct (impôt sur les sociétés, dividende d’EDF, TVA)', (e) => e.electriciteDirect],
     ['Dépenses nouvelles', (e) => -e.depenses],
+    ['Dépenses des nouveaux habitants (immigration de travail, 21 300 € par habitant en euros 2025)', (e) => -e.depensesNouveauxHabitants],
+    ['Régularisation : cotisations des personnes régularisées en emploi', (e) => e.recettesRegularisation],
     ['Frictions (bonification, spread, importations)', (e) => -e.frictions],
   ]
   const pib: [string, (e: (typeof effets)[number]) => number][] = [
@@ -114,8 +115,17 @@ function DecompositionEffet({ t, params }: { t: Trajectoires; params: Simulation
     ['dont activité freinée par les prélèvements nouveaux', (e) => e.deltaPibRecessif],
     [`dont capacités de production (capital accumulé × ${fmtNombre(params.rendementCapitalPct, 0)} %)`, (e) => e.deltaPibOffre],
     ['dont baisse de la facture d’électricité (+0,14 × baisse de la facture, simulation et non mesure)', (e) => e.deltaPibElectricite],
-    [`dont report de la demande vers des produits français (${fmtNombre(params.substitutionImports, 1)} point par point de PIB investi)`, (e) => e.deltaPibSubstitution],
+    [`dont report de la demande vers des produits français (${fmtNombre(params.substitutionImports, 2)} point par point de PIB investi)`, (e) => e.deltaPibSubstitution],
   ]
+  const personnes: [string, (e: (typeof effets)[number]) => number][] = [
+    ['Emplois directs du programme à pourvoir (hors emplois induits)', (e) => e.emploisDirectsCrees],
+    ['dont pourvus par des chômeurs du métier', (e) => e.emploisPourvusChomeurs],
+    ['dont pourvus par des travailleurs immigrés', (e) => e.travailleursImmigres],
+    ['dont non créés, faute de chômeur ni de nouvel arrivant', (e) => e.emploisNonCrees],
+    ['Migrants nets supplémentaires (stock, travailleurs ÷ 0,7)', (e) => e.migrantsSupplementaires],
+    ['Solde migratoire supplémentaire de l’année', (e) => e.soldeMigratoireSupplementaire],
+  ]
+  const arrivees = effets.filter((e) => e.annee >= 2028).reduce((somme, e) => somme + e.soldeMigratoireSupplementaire, 0) / effets.filter((e) => e.annee >= 2028).length
   const ecartes = effets.filter((e) => e.gainEcarte !== null)
   const cellule = 'nombre px-2 py-1 text-right'
   const entete = (
@@ -162,9 +172,23 @@ function DecompositionEffet({ t, params }: { t: Trajectoires; params: Simulation
                 {effets.map((e) => <td key={e.annee} className={cellule}>{md(f(e))}</td>)}
               </tr>
             ))}
+            <tr className="border-b border-line/60">
+              <th scope="row" className="px-2 pb-1 pt-3 font-semibold">Main-d’œuvre (nombre de personnes)</th>
+              {effets.map((e) => <td key={e.annee} className={`${cellule} pt-3`} aria-hidden="true" />)}
+            </tr>
+            {personnes.map(([libelle, f]) => (
+              <tr key={libelle} className="border-b border-line/60 text-ink-soft">
+                <th scope="row" className="px-2 py-1 font-normal">{libelle}</th>
+                {effets.map((e) => <td key={e.annee} className={cellule}>{fmtNombre(f(e), 0)}</td>)}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+      <p className="mt-2 text-xs text-ink-soft">
+        Arrivées nettes supplémentaires : {fmtNombre(Math.round(arrivees / 1000) * 1000, 0)} par an en moyenne de 2028 à {FIN}, en plus des 150 000 par an du scénario central de l’Insee.
+        Les travailleurs immigrés ne s’ajoutent pas au surcroît de PIB : celui-ci suppose déjà tous les emplois pourvus ; ils le rendent possible là où les chômeurs du métier ne suffisent pas.
+      </p>
       <p className="mt-2 text-xs text-ink-soft">
         Pour mémoire, le moteur (cascade ci-dessus) donne {fmtMd(t.composantesAn1.soldeMoteur, { signe: true, decimales: 1 })} en An 1 et{' '}
         {fmtMd(t.composantesAP.soldeMoteur, { signe: true, decimales: 1 })} en année pleine, en euros 2027. La trajectoire s’en écarte parce qu’elle convertit
@@ -178,6 +202,40 @@ function DecompositionEffet({ t, params }: { t: Trajectoires; params: Simulation
         </p>
       )}
     </div>
+  )
+}
+
+/** Repère : les montants du cadrage officiel de première année (S1), lus avec les réserves déjà documentées dans la méthodologie. */
+function ReperePremiereAnnee({ t, onMethodologie }: { t: Trajectoires; onMethodologie: () => void }) {
+  return (
+    <aside aria-labelledby="repere-cadrage" className="rounded-xl border border-line bg-surface-alt p-4 text-sm shadow-sm">
+      <h2 id="repere-cadrage" className="text-sm font-bold">Repère : cadrage officiel de première année (2027)</h2>
+      <p className="mt-1 text-ink-soft">
+        À lire avec esprit critique : ce n’est pas un chiffrage du programme sur la durée, que le simulateur cherche à évaluer.
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft">
+        <li>
+          Montants du cadrage (S1) : <strong className="nombre text-ink">{fmtMd(hv('depensesAn1'))}</strong> de dépenses et{' '}
+          <strong className="nombre text-ink">{fmtMd(hv('recettesAn1'))}</strong> de recettes en première année.
+        </li>
+        <li>
+          Solde calculé par le moteur pour la première année avec les réglages actuels :{' '}
+          <strong className="nombre text-ink">{fmtMd(t.composantesAn1.soldeMoteur, { signe: true, decimales: 1 })}</strong> (euros 2027, pour mémoire).
+        </li>
+        <li>
+          Selon S1, le document « ne constitue pas un chiffrage complet du programme L’Avenir en Commun qui s’étalera sur plusieurs années » ;
+          il vise un ajustement de 25 Md€. Plusieurs mesures y sont citées sans chiffrage officiel.
+        </li>
+        <li>
+          Le modèle d’origine a été corrigé sur quatre points : bonification du pôle bancaire, CADES, coûts évités, effet récessif des prélèvements nouveaux.
+        </li>
+      </ul>
+      <p className="mt-2">
+        <button type="button" onClick={onMethodologie} className="font-semibold text-brand underline">
+          Voir la méthodologie
+        </button>
+      </p>
+    </aside>
   )
 }
 
@@ -196,7 +254,7 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
             Chaque curseur correspond à une hypothèse explicite, et chaque chiffre est calculé par le moteur, jamais saisi à la main.
           </p>
           <p>
-            Pour le lire : choisissez un horizon (An 1 ou année pleine), partez d’un préréglage puis ajustez les curseurs. Le badge de chaque
+            Pour le lire : partez d’un préréglage puis ajustez les curseurs ; les résultats portent sur l’année pleine et sur les trajectoires jusqu’en 2035. Le badge de chaque
             valeur indique son degré de fiabilité ; de nombreuses valeurs sont des hypothèses non sourcées. Les intervalles Monte-Carlo ne portent que
             sur le volume d’investissement des filières. Il s’agit d’un outil pédagogique, pas d’une prévision.{' '}
             <button type="button" onClick={() => setOnglet('methodologie')} className="font-semibold text-brand underline">
@@ -208,15 +266,6 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
       </Carte>
 
       <Carte>
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <span className="text-sm font-bold">Horizon</span>
-          <Segmented<Horizon>
-            legende="Horizon de la simulation"
-            valeur={params.horizon}
-            onChange={(h) => setParam('horizon', h)}
-            options={[{ valeur: 'an1', label: 'An 1 (2027)' }, { valeur: 'anneePleine', label: 'Année pleine' }]}
-          />
-        </div>
         <Presets
           actif={scenarioActif}
           sansLeviers={sansLeviersActif}
@@ -229,7 +278,9 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
         />
       </Carte>
 
-      <KpiCards modele={modele} params={params} />
+      <KpiCards modele={modele} />
+
+      <ReperePremiereAnnee t={t} onMethodologie={() => setOnglet('methodologie')} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="flex justify-end lg:col-span-2 lg:-mb-2">
@@ -320,40 +371,49 @@ export function SimulateurTab({ etat, modele }: { etat: Etat; modele: Modele }) 
             {params.rendementCapitalPct > 0 ? (
               <>
                 Les investissements des filières s’accumulent en capital, qui ajoute chaque année au PIB {fmtNombre(params.rendementCapitalPct, 0)} centimes
-                par euro investi, dès l’année suivante (hypothèse réglable ; repères : FMI, S15 ; Bom et Ligthart, S16 ; à l’inverse, Pisani-Ferry et Mahfouz, S17).
+                par euro investi, dès l’année suivante (hypothèse réglable ; 2 % par défaut : moyenne des rendements nets par filière pondérée par l’investissement, S31 à S36 ; repères : FMI, S15 ; Bom et Ligthart, S16 ; à l’inverse, Pisani-Ferry et Mahfouz, S17).
               </>
             ) : (
               <>
-                Les investissements des filières n’ont qu’un effet de demande : leur effet durable sur les capacités de production est nul par défaut, car une
-                partie des investissements de transition n’accroît pas les capacités (Pisani-Ferry et Mahfouz, S17). Réglable de 0 à 20 % (repères : FMI, S15 ;
+                Les investissements des filières n’ont qu’un effet de demande : leur effet durable sur les capacités de production est réglé à 0 (2 % par défaut,
+                voir la méthodologie ; S17 et S35 : une partie des investissements de transition n’accroît pas les capacités). Réglable de 0 à 20 % (repères : FMI, S15 ;
                 Bom et Ligthart, S16).
               </>
             )}{' '}
             {params.substitutionImports > 0 ? (
               <>
                 Report de la demande vers des produits français : chaque point de PIB de capital installé par les filières de biens échangeables
-                (automobile, industrie, agriculture, mer, numérique) fait baisser de {fmtNombre(params.substitutionImports, 1)} point la part importée de la
+                (automobile, industrie, agriculture, mer, numérique) fait baisser de {fmtNombre(params.substitutionImports, 2)} point la part importée de la
                 demande créée par le programme, partie de {fmtPct(hv('partImporteeDemande'), 0)} (Banque de France, S18) et bornée à{' '}
                 {fmtPct(hv('partImporteeMin'), 0)} (son niveau de 1965) ; si l’effet durable est aussi activé, seul le plus grand des deux gains est retenu
-                (hypothèse réglable, sans source pour la chiffrer).
+                (hypothèse réglable ; 0,45 par défaut, dérivé de S18 et S31 faute de source directe).
               </>
             ) : (
               <>
-                Le report de la demande vers des produits français (réindustrialisation) est nul par défaut, faute de source pour le chiffrer ; réglable de 0 à 2.
+                Le report de la demande vers des produits français (réindustrialisation) est réglé à 0 (0,45 par défaut, valeur dérivée de S18 et S31) ; réglable de 0 à 2.
               </>
             )}
           </p>
           <p>
             Électricité : {params.ecartPrixElectricite === 0 ? (
-              <>par défaut, aucun écart entre le prix de marché tendanciel et le coût moyen de production : aucun effet (réglable dans les hypothèses avancées). </>
+              <>par défaut, aucun écart entre le prix de marché tendanciel et le coût complet du nucléaire : aucun effet (réglable dans les hypothèses avancées). </>
             ) : (
               <>
-                écart de {fmtNombre(params.ecartPrixElectricite, 0, true)} €/MWh (euros 2027) pendant {params.anneesEcartElectricite} an{params.anneesEcartElectricite > 1 ? 's' : ''} à partir de 2028 :
+                écart de {fmtNombre(params.ecartPrixElectricite, 0)} €/MWh par rapport au coût complet (euros 2027) et marge de {fmtNombre(params.margeElectricite, 1)} €/MWh pendant {params.anneesEcartElectricite} an{params.anneesEcartElectricite > 1 ? 's' : ''} à partir de 2028 :
+                le gain est l’écart moins la marge et moins la minoration du versement nucléaire universel (S30), sans jamais être négatif (le prix régulé n’excède pas le prix sans programme) ;
                 effet de −40 % de la baisse de la facture sur le solde (impôt sur les sociétés d’EDF, dividende, TVA) et de +0,14 de PIB par euro de baisse (simulation du
                 modèle FR-BDF de la Banque de France, S27, et non mesure). {' '}
               </>
             )}
-            Le scénario tendanciel ne finance aucun bouclier tarifaire : si le tendanciel en avait financé un comme en 2022, le programme l’économiserait ; ce gain n’est pas compté.
+            Le scénario tendanciel ne finance aucun bouclier tarifaire : si le tendanciel en avait financé un comme en 2022, le programme l’économiserait ; ce gain n’est pas compté. Aucune baisse du prix du gaz n’est modélisée.
+          </p>
+          <p>
+            Main-d’œuvre : {fmtNombre(params.partChomeursMobilisablesPct, 0)} % des demandeurs d’emploi de chaque groupe de métiers (DARES, 09/2026, S38) peuvent occuper les emplois directs créés ;
+            les emplois en excédent sont pourvus à {fmtNombre(params.partEmploisManquantsImmigrationPct, 0)} % par une nouvelle immigration de travail (0,7 actif par migrant net, S42), le reste n’est pas créé
+            (PIB, coûts évités et capital correspondants en moins). Les emplois induits par le multiplicateur sont supposés pourvus sans contrainte, et la répartition des emplois entre métiers
+            est une hypothèse de travail non sourcée. Chaque migrant supplémentaire coûte 21 300 € par an (euros 2025, indexés sur le PIB tendanciel ; méthode de l’OCDE, S45 et S46) ; ses recettes passent déjà par les recettes sur le surcroît de PIB.
+            Régularisation : {fmtNombre(params.effectifRegularisation, 0)} personnes à partir de 2028, 61,9 % en emploi (S44) cotisant 55 % d’un cotisant moyen (S48), sans effet sur le PIB ni dépense nouvelle modélisée
+            (droits nouvellement ouverts non chiffrés faute de source).
           </p>
           <p>
             Rachat d’Engie : {params.rachatEngie ? (
