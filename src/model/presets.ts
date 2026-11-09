@@ -3,7 +3,7 @@ import { SCENARIOS, type CleScenario } from '../data/scenarios'
 import type { SimulationParams } from './types'
 
 /** Préréglages disposant d'une variante « sans leviers monétaires ». */
-export const CLES_AVEC_VARIANTE: readonly CleScenario[] = ['an1', 'complet', 'haut', 'median', 'bas']
+export const CLES_AVEC_VARIANTE: readonly CleScenario[] = ['complet', 'haut', 'median', 'bas']
 
 export const aUneVariante = (cle: CleScenario): boolean => CLES_AVEC_VARIANTE.includes(cle)
 
@@ -29,8 +29,12 @@ export const PARAMS_HORS_PRESET = [
   'partPretsUtilisesPct',
   'dureeMonteeInvestissement',
   'ecartPrixElectricite',
+  'margeElectricite',
   'anneesEcartElectricite',
   'rachatEngie',
+  'partChomeursMobilisablesPct',
+  'partEmploisManquantsImmigrationPct',
+  'effectifRegularisation',
 ] as const satisfies readonly (keyof SimulationParams)[]
 
 type CleHorsPreset = (typeof PARAMS_HORS_PRESET)[number]
@@ -50,8 +54,12 @@ export function paramsHorsPreset(p: SimulationParams): Pick<SimulationParams, Cl
     partPretsUtilisesPct: p.partPretsUtilisesPct,
     dureeMonteeInvestissement: p.dureeMonteeInvestissement,
     ecartPrixElectricite: p.ecartPrixElectricite,
+    margeElectricite: p.margeElectricite,
     anneesEcartElectricite: p.anneesEcartElectricite,
     rachatEngie: p.rachatEngie,
+    partChomeursMobilisablesPct: p.partChomeursMobilisablesPct,
+    partEmploisManquantsImmigrationPct: p.partEmploisManquantsImmigrationPct,
+    effectifRegularisation: p.effectifRegularisation,
   }
 }
 
@@ -90,7 +98,8 @@ export interface ReglagesReference {
  * (retours courants 14, ρ 0,5, croissance réelle 1,2 % à partir de 2029, inflation 1,5 %, écart des dépenses 0,
  * recettes sur le surcroît d'activité 35 %, effet durable des investissements 0 %, report de la demande vers des
  * produits français 0, bonification 0 %, durée de montée en charge de l'investissement 10 ans, écart de prix de l'électricité 0,
- * rachat d'Engie coché, CADES comptée).
+ * rachat d'Engie coché, CADES comptée, 25 % des demandeurs d'emploi mobilisables, 100 % des emplois manquants pourvus par
+ * une immigration de travail, 410 000 personnes régularisées).
  */
 export function parametresDeReinitialisation(dernierPreset: CleScenario | null | undefined, sans: boolean): ReglagesReference {
   const cle = dernierPreset ?? 'complet'

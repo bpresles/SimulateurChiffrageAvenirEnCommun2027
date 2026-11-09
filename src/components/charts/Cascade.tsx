@@ -14,7 +14,7 @@ interface Barre {
 export function barresCascade(r: ResultatSimulation): Barre[] {
   return [
     { label: 'Dépenses', valeur: -r.depenses.total },
-    { label: 'Recettes An 1', valeur: r.recettesAn1 },
+    { label: 'Recettes du cadrage', valeur: r.recettesAn1 },
     { label: 'Recettes année pleine', valeur: r.recettesAP },
     { label: 'Retours directs', valeur: r.roiDirect },
     { label: 'Retours indirects', valeur: r.roiIndirect },
@@ -64,7 +64,7 @@ export function Cascade({ resultat }: { resultat: ResultatSimulation }) {
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby={`${id}-t ${id}-d`} className="h-auto w-full min-w-[760px]">
           <title id={`${id}-t`}>Cascade du solde budgétaire</title>
           <desc id={`${id}-d`}>
-            {`${resume} Barres successives : dépenses, recettes An 1, recettes année pleine, retours directs, retours indirects, coûts évités, effet récessif, leviers monétaires, frictions puis solde. Les valeurs sont dans le tableau de données ci-dessous.`}
+            {`${resume} Barres successives : dépenses, recettes du cadrage, recettes année pleine, retours directs, retours indirects, coûts évités, effet récessif, leviers monétaires, frictions puis solde. Les valeurs sont dans le tableau de données ci-dessous.`}
           </desc>
           {ticks.map((t) => (
             <g key={t}>

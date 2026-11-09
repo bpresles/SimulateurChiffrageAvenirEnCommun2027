@@ -1,7 +1,7 @@
 import type { SimulationParams } from '../model/types'
 import { hv } from './hypotheses'
 
-export type CleScenario = 'an1' | 'complet' | 'haut' | 'median' | 'bas' | 'stress'
+export type CleScenario = 'complet' | 'haut' | 'median' | 'bas' | 'stress'
 
 /** Valeurs par défaut des paramètres ajoutés par la refonte. */
 export const NOUVEAUX_PARAMS_DEFAUT = {
@@ -19,8 +19,12 @@ export const NOUVEAUX_PARAMS_DEFAUT = {
   partPretsUtilisesPct: hv('partPretsUtilises'),
   dureeMonteeInvestissement: hv('dureeMonteeInvestissement'),
   ecartPrixElectricite: hv('ecartPrixElectricite'),
+  margeElectricite: hv('margeElectricite'),
   anneesEcartElectricite: hv('anneesEcartElectricite'),
   rachatEngie: true,
+  partChomeursMobilisablesPct: hv('partChomeursMobilisables'),
+  partEmploisManquantsImmigrationPct: hv('partEmploisManquantsImmigration'),
+  effectifRegularisation: hv('effectifRegularisation'),
 } as const
 
 export interface Scenario {
@@ -35,11 +39,6 @@ const base = (
 ): SimulationParams => ({ ...p, ...NOUVEAUX_PARAMS_DEFAUT })
 
 export const SCENARIOS: Scenario[] = [
-  {
-    cle: 'an1', libelle: 'Cadrage An 1 (2027)',
-    description: 'Lecture du cadrage de première année : dépenses et recettes annoncées, première tranche des investissements, leviers monétaires à moitié.',
-    params: base({ horizon: 'an1', percentile: 50, multiplicateur: 1.35, recettesAnneePleinePct: 0, recouvrementPct: 100, gelBcePct: 0, cadesPct: 0, primaireBcePct: 50, circuitTresorPct: 50 }),
-  },
   {
     cle: 'haut', libelle: 'Hypothèses hautes (P90)',
     description: 'Année pleine avec investissements au P90, multiplicateur élevé, recouvrement quasi complet et leviers monétaires pleinement mobilisés.',

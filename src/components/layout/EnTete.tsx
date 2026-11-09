@@ -10,12 +10,11 @@ interface Props {
   onglet: Onglet
   onChange: (o: Onglet) => void
   solde: number
-  horizonLabel: string
   theme: Theme
   onBasculerTheme: () => void
 }
 
-export function EnTete({ onglet, onChange, solde, horizonLabel, theme, onBasculerTheme }: Props) {
+export function EnTete({ onglet, onChange, solde, theme, onBasculerTheme }: Props) {
   const libelle = theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'
   return (
     <header className="bg-entete text-white">
@@ -38,7 +37,7 @@ export function EnTete({ onglet, onChange, solde, horizonLabel, theme, onBascule
             {theme === 'dark' ? <Sun aria-hidden="true" className="h-5 w-5" /> : <Moon aria-hidden="true" className="h-5 w-5" />}
           </button>
           <p className="order-3 col-span-2 rounded-lg bg-white/10 px-3 py-1.5 text-sm sm:order-2 sm:col-span-1" aria-live="polite">
-            <span className="text-white/80">Solde calculé ({horizonLabel}) : </span>
+            <span className="text-white/80">Solde calculé (année pleine) : </span>
             <strong className="nombre">{fmtMd(solde, { signe: true })}/an</strong>
           </p>
         </div>

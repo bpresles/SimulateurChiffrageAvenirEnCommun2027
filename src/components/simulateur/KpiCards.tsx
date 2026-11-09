@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { LIBELLE_POLE } from '../../data/filieres'
 import { fmtEmplois, fmtMd, fmtPct } from '../../lib/format'
 import type { Modele } from '../../state/useModele'
-import type { SimulationParams } from '../../model/types'
 import type { StatutFiabilite } from '../../data/sources'
 import { Badge } from '../ui/Badge'
 
@@ -18,10 +17,9 @@ function Kpi({ titre, valeur, ton, children, statut }: { titre: string; valeur: 
   )
 }
 
-export function KpiCards({ modele, params }: { modele: Modele; params: SimulationParams }) {
+export function KpiCards({ modele }: { modele: Modele }) {
   const { resultat: r, trajectoires: t, mc, mcAJour } = modele
-  const an1 = params.horizon === 'an1'
-  const anneeH = an1 ? 2027 : 2030
+  const anneeH = 2030
   const pt = t.programme.find((p) => p.annee === anneeH)!
   const tend = t.tendanciel.find((p) => p.annee === anneeH)!
   const p2032 = t.programme.find((p) => p.annee === 2032)!
@@ -30,7 +28,7 @@ export function KpiCards({ modele, params }: { modele: Modele; params: Simulatio
   const stale = mcAJour ? '' : ' (mise à jour…)'
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <Kpi titre={`Solde (${an1 ? 'An 1' : 'année pleine'})`} valeur={fmtMd(r.solde, { signe: true })} ton={r.solde >= 0 ? 'positif' : 'negatif'} statut="hypothese-modele">
+      <Kpi titre={'Solde (année pleine)'} valeur={fmtMd(r.solde, { signe: true })} ton={r.solde >= 0 ? 'positif' : 'negatif'} statut="hypothese-modele">
         <p>Variation du solde des APU vs trajectoire sans réforme, par an, en euros 2027.</p>
         <p>Intervalle Monte-Carlo P10–P90 : <strong className="nombre text-ink">{interv(mc.solde.p10, mc.solde.p90)}</strong>{stale}</p>
         <p>
@@ -44,7 +42,7 @@ export function KpiCards({ modele, params }: { modele: Modele; params: Simulatio
       </Kpi>
       <Kpi titre="Retours des filières" valeur={fmtMd(r.retoursFilieres, { signe: true })} statut="hypothese-non-sourcee">
         <p>Direct {fmtMd(r.roiDirectFilieres, { decimales: 0 })} · indirect {fmtMd(r.roiIndirect, { decimales: 0 })} · évités budgétaires {fmtMd(r.coutsEvites, { decimales: 0 })}</p>
-        <p>Taux d’autofinancement : <strong className="nombre text-ink">{fmtPct(r.autofinancementPct, 0)}</strong>{an1 ? ' (rapporté à la montée en charge An 1)' : ''}</p>
+        <p>Taux d’autofinancement : <strong className="nombre text-ink">{fmtPct(r.autofinancementPct, 0)}</strong></p>
       </Kpi>
       <Kpi titre="Leviers nets des frictions" valeur={fmtMd(r.leviersNets, { signe: true })} statut="hypothese-non-sourcee">
         <p>Leviers comptés {fmtMd(r.leviers.total, { signe: true })} − frictions {fmtMd(r.frictions.total)}</p>

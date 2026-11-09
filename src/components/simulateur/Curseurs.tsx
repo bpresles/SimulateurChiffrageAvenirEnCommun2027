@@ -20,7 +20,6 @@ const BadgeJuridique = ({ id }: { id: CleLevier }) => {
 }
 
 export function CurseursEconomie({ params, r, setParam }: Props) {
-  const an1 = params.horizon === 'an1'
   const pLabel = params.percentile === 50 ? 'P50, central' : `P${params.percentile}`
   return (
     <Carte titre="Économie réelle">
@@ -46,14 +45,13 @@ export function CurseursEconomie({ params, r, setParam }: Props) {
         label="Recettes sociales et fiscales d’année pleine"
         valeur={params.recettesAnneePleinePct} min={0} max={100} pas={5}
         onChange={(v) => setParam('recettesAnneePleinePct', v)}
-        disabled={an1}
         affichage={`${fmtPct(params.recettesAnneePleinePct, 0)} (${fmtMd(r.recettesAPNominal)})`}
         texteVocal={`${params.recettesAnneePleinePct} pour cent, soit ${fmtNombre(r.recettesAPNominal)} milliards d'euros avant recouvrement`}
         badge={<Badge statut="hypothese-non-sourcee" court />}
-        aide={an1 ? 'Désactivé à l’horizon An 1.' : `Après recouvrement : ${fmtMd(r.recettesAP)}.`}
+        aide={`Après recouvrement : ${fmtMd(r.recettesAP)}.`}
       />
       <Slider
-        label="Recouvrement des recettes An 1"
+        label="Recouvrement des recettes du cadrage"
         valeur={params.recouvrementPct} min={55} max={100} pas={1}
         onChange={(v) => setParam('recouvrementPct', v)}
         affichage={`${fmtPct(params.recouvrementPct, 0)} (${fmtMd(r.recettesAn1)})`}
@@ -84,7 +82,6 @@ export function CurseursEconomie({ params, r, setParam }: Props) {
 }
 
 export function CurseursLeviers({ params, r, setParam }: Props) {
-  const an1 = params.horizon === 'an1'
   const ligne = (v: number) => fmtMd(v, { signe: true })
   return (
     <Carte titre="Leviers monétaires">
@@ -92,21 +89,18 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         label="Gel ou conversion du stock détenu par la BCE"
         valeur={params.gelBcePct} min={0} max={100} pas={5}
         onChange={(v) => setParam('gelBcePct', v)}
-        disabled={an1}
         affichage={`${fmtPct(params.gelBcePct, 0)} (${ligne(r.leviers.gelBce)})`}
         texteVocal={`${params.gelBcePct} pour cent, soit ${fmtNombre(r.leviers.gelBce)} milliards d'euros par an`}
         badge={<BadgeJuridique id="gelBce" />}
-        aide={an1 ? 'Sans effet à l’horizon An 1.' : undefined}
       />
       <Slider
         label="Arrêt de l’amortissement CADES"
         valeur={params.cadesPct} min={0} max={100} pas={5}
         onChange={(v) => setParam('cadesPct', v)}
-        disabled={an1}
         badge={<><Badge statut="officiel" court /><BadgeJuridique id="cades" /></>}
         affichage={`${fmtPct(params.cadesPct, 0)} (brut ${fmtMd(r.leviers.cadesBrute)} ; compté ${fmtMd(r.leviers.cadesComptee)})`}
         texteVocal={`${params.cadesPct} pour cent, soit ${fmtNombre(r.leviers.cadesBrute)} milliards d'euros bruts et ${fmtNombre(r.leviers.cadesComptee)} comptés dans le solde`}
-        aide={an1 ? 'Sans effet à l’horizon An 1.' : 'Le programme chiffre la réforme à 19 Md€/an (S6). En lecture APU consolidée, cette somme est une recette déjà présente dans la trajectoire de base : décocher pour cette lecture.'}
+        aide="Le programme chiffre la réforme à 19 Md€/an (S6). En lecture APU consolidée, cette somme est une recette déjà présente dans la trajectoire de base : décocher pour cette lecture."
       />
       <div className="pb-1">
         <label className="flex items-center gap-2 text-sm">
@@ -135,7 +129,7 @@ export function CurseursLeviers({ params, r, setParam }: Props) {
         affichage={`${fmtPct(params.circuitTresorPct, 0)} (${ligne(r.leviers.tresor)})`}
         texteVocal={`${params.circuitTresorPct} pour cent, soit ${fmtNombre(r.leviers.tresor)} milliards d'euros par an`}
         badge={<BadgeJuridique id="circuitTresor" />}
-        aide={an1 ? 'Moitié de l’effet en An 1.' : `Risque de spread résiduel : ${fmtMd(r.frictions.spread)}.`}
+        aide={`Risque de spread résiduel : ${fmtMd(r.frictions.spread)}.`}
       />
     </Carte>
   )

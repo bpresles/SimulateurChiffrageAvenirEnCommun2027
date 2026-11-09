@@ -141,7 +141,7 @@ describe('corrections', () => {
     expect(impactCorrections({ ...scenario('complet'), cadesCompteDansSolde: false }).find((x) => x.cle === 'cades')!.active).toBe(true)
   })
   it('la bonification n’est comptée en An 1 qu’avec la correction', () => {
-    const p = { ...scenario('an1'), primaireBcePct: 0, tauxBonificationPct: 8 }
+    const p = { ...scenario('complet'), horizon: 'an1' as const, primaireBcePct: 0, tauxBonificationPct: 8 }
     expect(simuler(p, OPTIONS_ORIGINE).frictions.bonification).toBe(0)
     expect(simuler(p).frictions.bonification).toBeGreaterThan(0)
   })
