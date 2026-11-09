@@ -1,5 +1,5 @@
 import type { SimulationParams } from '../model/types'
-import { HYPOTHESES } from './hypotheses'
+import { hv } from './hypotheses'
 
 export type CleScenario = 'an1' | 'complet' | 'haut' | 'median' | 'bas' | 'stress'
 
@@ -9,8 +9,18 @@ export const NOUVEAUX_PARAMS_DEFAUT = {
   partBudgetaireCoutsEvitesPct: 25,
   retoursCourantsBase: 14,
   cadesCompteDansSolde: true,
-  croissanceNominalePct: HYPOTHESES.croissanceNominale.valeur,
+  croissanceLongTermePct: hv('croissanceLongTerme'),
+  inflationPct: hv('inflation'),
+  ecartDepensesPct: hv('ecartDepenses'),
+  tauxRecettesActivitePct: hv('tauxRetourFiscalPib') * 100,
+  rendementCapitalPct: hv('rendementCapital'),
+  substitutionImports: hv('substitutionImports'),
   tauxBonificationPct: 0,
+  partPretsUtilisesPct: hv('partPretsUtilises'),
+  dureeMonteeInvestissement: hv('dureeMonteeInvestissement'),
+  ecartPrixElectricite: hv('ecartPrixElectricite'),
+  anneesEcartElectricite: hv('anneesEcartElectricite'),
+  rachatEngie: true,
 } as const
 
 export interface Scenario {

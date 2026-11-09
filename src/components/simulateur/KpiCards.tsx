@@ -35,7 +35,7 @@ export function KpiCards({ modele, params }: { modele: Modele; params: Simulatio
         <p>Intervalle Monte-Carlo P10–P90 : <strong className="nombre text-ink">{interv(mc.solde.p10, mc.solde.p90)}</strong>{stale}</p>
         <p>
           Déficit {anneeH} : <strong className="nombre text-ink">{fmtPct(pt.soldePct)}</strong> du PIB, contre{' '}
-          <span className="nombre">{fmtPct(tend.soldePct)}</span> en tendanciel.
+          <span className="nombre">{fmtPct(tend.soldePct)}</span> en tendanciel (trajectoire en euros courants, effet du programme sur la croissance compris).
         </p>
       </Kpi>
       <Kpi titre="Investissements" valeur={fmtMd(r.agregat.totalInvest)} statut="hypothese-non-sourcee">
