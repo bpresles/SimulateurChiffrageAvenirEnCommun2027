@@ -17,9 +17,47 @@ export function paramsPreset(cle: CleScenario, sans: boolean): SimulationParams 
   return sans && aUneVariante(cle) ? sansLeviers(base) : { ...base }
 }
 
-/** Compare deux jeux de paramètres ; la croissance nominale et le taux de bonification n'en font pas partie. */
+/** Hypothèses avancées conservées quand on change de préréglage : macroéconomie des trajectoires et taux de bonification. */
+export const PARAMS_HORS_PRESET = [
+  'croissanceLongTermePct',
+  'inflationPct',
+  'ecartDepensesPct',
+  'tauxRecettesActivitePct',
+  'rendementCapitalPct',
+  'substitutionImports',
+  'tauxBonificationPct',
+  'partPretsUtilisesPct',
+  'dureeMonteeInvestissement',
+  'ecartPrixElectricite',
+  'anneesEcartElectricite',
+  'rachatEngie',
+] as const satisfies readonly (keyof SimulationParams)[]
+
+type CleHorsPreset = (typeof PARAMS_HORS_PRESET)[number]
+
+const horsPreset = (k: keyof SimulationParams): boolean => (PARAMS_HORS_PRESET as readonly string[]).includes(k)
+
+/** Valeurs courantes des hypothèses avancées conservées d'un préréglage à l'autre. */
+export function paramsHorsPreset(p: SimulationParams): Pick<SimulationParams, CleHorsPreset> {
+  return {
+    croissanceLongTermePct: p.croissanceLongTermePct,
+    inflationPct: p.inflationPct,
+    ecartDepensesPct: p.ecartDepensesPct,
+    tauxRecettesActivitePct: p.tauxRecettesActivitePct,
+    rendementCapitalPct: p.rendementCapitalPct,
+    substitutionImports: p.substitutionImports,
+    tauxBonificationPct: p.tauxBonificationPct,
+    partPretsUtilisesPct: p.partPretsUtilisesPct,
+    dureeMonteeInvestissement: p.dureeMonteeInvestissement,
+    ecartPrixElectricite: p.ecartPrixElectricite,
+    anneesEcartElectricite: p.anneesEcartElectricite,
+    rachatEngie: p.rachatEngie,
+  }
+}
+
+/** Compare deux jeux de paramètres, hors hypothèses macroéconomiques et taux de bonification. */
 export const memeParams = (a: SimulationParams, b: SimulationParams): boolean =>
-  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => k === 'croissanceNominalePct' || k === 'tauxBonificationPct' || a[k] === b[k])
+  (Object.keys(a) as (keyof SimulationParams)[]).every((k) => horsPreset(k) || a[k] === b[k])
 
 export interface PresetReconnu {
   cle: CleScenario
@@ -49,7 +87,10 @@ export interface ReglagesReference {
 /**
  * Réglages de référence pour la réinitialisation : le dernier préréglage choisi (« complet » à défaut)
  * dans la variante donnée, avec les hypothèses avancées à leurs valeurs par défaut
- * (retours courants 14, ρ 0,5, croissance 2,5 %, bonification 0 %, CADES comptée).
+ * (retours courants 14, ρ 0,5, croissance réelle 1,2 % à partir de 2029, inflation 1,5 %, écart des dépenses 0,
+ * recettes sur le surcroît d'activité 35 %, effet durable des investissements 0 %, report de la demande vers des
+ * produits français 0, bonification 0 %, durée de montée en charge de l'investissement 10 ans, écart de prix de l'électricité 0,
+ * rachat d'Engie coché, CADES comptée).
  */
 export function parametresDeReinitialisation(dernierPreset: CleScenario | null | undefined, sans: boolean): ReglagesReference {
   const cle = dernierPreset ?? 'complet'

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PARAMS_PAR_DEFAUT, type CleScenario } from '../data/scenarios'
 import { hv } from '../data/hypotheses'
-import { aUneVariante, memeParamsStrict, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from '../model/presets'
+import { aUneVariante, memeParamsStrict, paramsHorsPreset, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from '../model/presets'
 import type { SimulationParams } from '../model/types'
 
 export type Onglet = 'simulateur' | 'filieres' | 'leviers' | 'matrice' | 'methodologie'
@@ -13,7 +13,7 @@ export const ONGLETS: { id: Onglet; label: string }[] = [
   { id: 'methodologie', label: 'Méthodologie et sources' },
 ]
 
-type CleNum = Exclude<keyof SimulationParams, 'horizon' | 'cadesCompteDansSolde'>
+type CleNum = Exclude<keyof SimulationParams, 'horizon' | 'cadesCompteDansSolde' | 'rachatEngie'>
 
 /** Clé d'URL, bornes pour chaque paramètre numérique. */
 const NUM: Record<CleNum, { k: string; min: number; max: number }> = {
@@ -28,8 +28,17 @@ const NUM: Record<CleNum, { k: string; min: number; max: number }> = {
   cadesPct: { k: 'cd', min: 0, max: 100 },
   primaireBcePct: { k: 'pr', min: 0, max: 100 },
   circuitTresorPct: { k: 'ct', min: 0, max: 100 },
-  croissanceNominalePct: { k: 'cr', min: 0, max: 5 },
+  croissanceLongTermePct: { k: 'gl', min: -1, max: 3 },
+  inflationPct: { k: 'in', min: 0, max: 4 },
+  ecartDepensesPct: { k: 'ed', min: -2, max: 2 },
+  tauxRecettesActivitePct: { k: 'tx', min: 20, max: 55 },
+  rendementCapitalPct: { k: 'rk', min: 0, max: 20 },
+  substitutionImports: { k: 'si', min: 0, max: 2 },
   tauxBonificationPct: { k: 'bo', min: 0, max: 8 },
+  partPretsUtilisesPct: { k: 'pu', min: 0, max: 100 },
+  dureeMonteeInvestissement: { k: 'di', min: 10, max: 30 },
+  ecartPrixElectricite: { k: 'pe', min: -20, max: 100 },
+  anneesEcartElectricite: { k: 'ne', min: 1, max: 8 },
 }
 
 export interface EtatUrl {
@@ -55,6 +64,8 @@ export function lireUrl(search: string): EtatUrl {
   }
   const cc = q.get('cc')
   if (cc === '0' || cc === '1') params.cadesCompteDansSolde = cc === '1'
+  const re = q.get('re')
+  if (re === '0' || re === '1') params.rachatEngie = re === '1'
   const rhoBrut = Number(q.get('rho'))
   const rho = q.get('rho') !== null && Number.isFinite(rhoBrut) ? clamp(rhoBrut, 0, 0.95) : hv('rho')
   const t = q.get('t')
@@ -68,6 +79,7 @@ export function ecrireUrl(etat: EtatUrl): string {
   q.set('h', etat.params.horizon === 'an1' ? 'an1' : 'ap')
   for (const cle of Object.keys(NUM) as CleNum[]) q.set(NUM[cle].k, String(etat.params[cle]))
   q.set('cc', etat.params.cadesCompteDansSolde ? '1' : '0')
+  q.set('re', etat.params.rachatEngie ? '1' : '0')
   if (etat.rho !== hv('rho')) q.set('rho', String(etat.rho))
   return q.toString()
 }
@@ -89,10 +101,10 @@ export function useSimulationParams() {
   const [choixSans, setChoixSans] = useState(initialSans)
   const [dernierPreset, setDernierPreset] = useState<CleScenario | null>(() => reconnaitrePreset(initial.params)?.cle ?? null)
 
-  /** Applique un préréglage dans la variante donnée ; la croissance nominale en cours est conservée. */
+  /** Applique un préréglage dans la variante donnée ; les hypothèses macroéconomiques et la bonification en cours sont conservées. */
   const appliquerScenario = useCallback((cle: CleScenario, sans: boolean) => {
     setDernierPreset(cle)
-    setParams((p) => ({ ...paramsPreset(cle, sans), croissanceNominalePct: p.croissanceNominalePct, tauxBonificationPct: p.tauxBonificationPct }))
+    setParams((p) => ({ ...paramsPreset(cle, sans), ...paramsHorsPreset(p) }))
   }, [])
 
   const setOnglet = useCallback((o: Onglet) => setOngletEtat(o), [])

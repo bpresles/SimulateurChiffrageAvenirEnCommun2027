@@ -48,6 +48,8 @@
 }
 
 .nombre { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Sépare les curseurs successifs pour que chaque aide reste rattachée à son curseur. */
+.slider-bloc + .slider-bloc { border-top: 1px solid var(--color-line); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }

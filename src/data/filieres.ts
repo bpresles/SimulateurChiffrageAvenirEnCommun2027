@@ -169,3 +169,28 @@ export const FILIERES: Filiere[] = [
     statutInvestissement: NS, statutRoi: NS,
   },
 ]
+
+/** Rôle d'une filière dans le report de la demande vers des produits français (piste 9, façon B). */
+export interface SubstitutionImports {
+  /** Vrai si le capital installé par la filière peut remplacer des importations de la demande créée par le programme. */
+  retenue: boolean
+  motif: string
+}
+
+/**
+ * Garde-fou automatique de la façon B (hypothèse de modélisation) : seul le capital des filières qui produisent des
+ * biens ou des services échangeables, et dont les importations évitées ne sont pas déjà comptées dans les coûts
+ * évités, fait baisser la part importée de la demande. La demande des 10 filières profite du report.
+ */
+export const SUBSTITUTION_IMPORTS: Readonly<Record<string, SubstitutionImports>> = {
+  btp: { retenue: false, motif: 'Logements et bâtiments, non échangeables ; les importations évitées (3,3 Md€ au P50) figurent déjà dans les coûts évités.' },
+  auto: { retenue: true, motif: 'Véhicules, batteries et équipements : biens échangeables produits par de nouvelles lignes de production.' },
+  energie: { retenue: false, motif: 'Les importations d’hydrocarbures évitées figurent déjà dans les coûts évités.' },
+  rail: { retenue: false, motif: 'Infrastructures et services de transport, non échangeables.' },
+  eau: { retenue: false, motif: 'Réseaux d’eau et ouvrages de protection, non échangeables.' },
+  industrie: { retenue: true, motif: 'Médicaments, semi-conducteurs, acier, ciment, chimie : biens échangeables ; les coûts évités portent sur les prix d’achat hospitaliers, pas sur les importations.' },
+  agri: { retenue: true, motif: 'Produits agricoles, alimentaires et bois : biens échangeables ; les coûts évités portent sur la dépollution et la santé.' },
+  mer: { retenue: true, motif: 'Éolien en mer, chantiers navals et pêche : biens échangeables (les ports, non échangeables, en sont une partie).' },
+  numerique: { retenue: true, motif: 'Cloud, logiciels et centres de données : services échangeables ; les coûts évités (licences de l’administration, 0,1 Md€) portent sur les achats de l’État, pas sur la demande créée par le programme.' },
+  spatial: { retenue: false, motif: 'Surtout des universités, des laboratoires et des logements étudiants, non échangeables.' },
+}
