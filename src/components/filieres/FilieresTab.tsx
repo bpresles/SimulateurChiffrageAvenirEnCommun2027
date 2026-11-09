@@ -109,7 +109,7 @@ export function FilieresTab({ params, modele }: { params: SimulationParams; mode
           {fmtNombre(mc.n, 0)} tirages reproductibles (graine fixe). Chaque filière suit une loi split-normale calée exactement sur ses P10, P50 et P90, avec une
           corrélation par facteur commun (ρ = {fmtNombre(mc.rho, 2)}, hypothèse de modélisation réglable dans le simulateur). <strong>Le Monte-Carlo ne porte que sur le
           volume d’investissement des filières</strong> ; tous les autres paramètres restent fixés par les curseurs du simulateur
-          ({params.horizon === 'an1' ? 'An 1' : 'année pleine'}).{!mcAJour && ' Mise à jour en cours…'}
+          (année pleine).{!mcAJour && ' Mise à jour en cours…'}
         </p>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Histogramme titre="Investissement total (Md€/an)" description="Distribution de l'investissement total des 10 filières sur les tirages." q={mc.investissement} unite="Md€/an" />

@@ -68,7 +68,7 @@ export function LeviersTab({ resultat }: { resultat: ResultatSimulation }) {
               <p className="text-sm">{l.comptageMoteur}</p>
               <p className="mt-1 text-xs text-ink-soft">Modèle d’origine : {l.comptageOrigine}</p>
               <p className="mt-2 text-sm">
-                Scénario actif ({resultat.horizon === 'an1' ? 'An 1' : 'année pleine'}) : <strong className="font-semibold">{montantCompte(l, resultat)}</strong>
+                Scénario actif (année pleine) : <strong className="font-semibold">{montantCompte(l, resultat)}</strong>
               </p>
               {l.id === 'primaireBce' && (
                 <p className="mt-1 text-sm">

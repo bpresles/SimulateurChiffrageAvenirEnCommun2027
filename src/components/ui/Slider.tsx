@@ -19,7 +19,7 @@ interface Props {
 export function Slider({ label, valeur, min, max, pas, onChange, affichage, texteVocal, disabled, aide, badge }: Props) {
   const id = useId()
   return (
-    <div className="py-2.5">
+    <div className="slider-bloc py-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <label htmlFor={id} className="text-sm font-semibold">
           {label}

@@ -23,10 +23,38 @@ export interface SimulationParams {
   primaireBcePct: number
   circuitTresorPct: number
   cadesCompteDansSolde: boolean
-  /** 0..5 : croissance nominale tendancielle du PIB (%/an), utilisée par les trajectoires seulement. */
-  croissanceNominalePct: number
+  /** −1..3 : croissance réelle tendancielle du PIB sans le programme à partir de 2029 (%/an), trajectoires seulement ; 2026-2028 suivent les prévisions. */
+  croissanceLongTermePct: number
+  /** 0..4 : inflation, hausse du déflateur du PIB (%/an), trajectoires seulement. */
+  inflationPct: number
+  /** −2..2 : écart entre la croissance des dépenses publiques et celle du PIB sans le programme (point/an), trajectoires seulement. */
+  ecartDepensesPct: number
+  /** 20..55 : recettes publiques par euro de PIB supplémentaire dû au programme (%), trajectoires seulement. */
+  tauxRecettesActivitePct: number
+  /** 0..20 : PIB supplémentaire par an par euro d'investissement des filières cumulé (%), trajectoires seulement. */
+  rendementCapitalPct: number
+  /** 0..2 : baisse de la part importée de la demande créée par le programme, en point, par point de PIB de capital des filières de biens échangeables, trajectoires seulement. */
+  substitutionImports: number
   /** 0..8 : coût de bonification du pôle public bancaire (% des prêts du pôle), 0 par défaut. */
   tauxBonificationPct: number
+  /** 0..100 : part des prêts du pôle public bancaire effectivement empruntée (%), trajectoires seulement. */
+  partPretsUtilisesPct: number
+  /** 10..30 : durée (années) de montée en charge de l'investissement des filières, nul en 2026-2027 puis linéaire à partir de 2028, trajectoires seulement. */
+  dureeMonteeInvestissement: number
+  /** 0..100 : écart entre le prix de marché tendanciel et le coût complet du nucléaire historique (€/MWh, euros 2027, indexé sur les prix), trajectoires seulement. */
+  ecartPrixElectricite: number
+  /** 0..25 : marge du monopole public au-dessus du coût complet (€/MWh, euros 2027), 16,5 par défaut ; elle reste à EDF, trajectoires seulement. */
+  margeElectricite: number
+  /** 1..8 : nombre d'années concernées par cet écart, à partir de 2028, trajectoires seulement. */
+  anneesEcartElectricite: number
+  /** Rachat en 2028 des actions d'Engie non détenues par l'État : accroît la dette, pas le déficit, trajectoires seulement. */
+  rachatEngie: boolean
+  /** 10..50 : part des demandeurs d'emploi ABC de chaque groupe de métiers mobilisables pour les emplois créés (%), trajectoires seulement. */
+  partChomeursMobilisablesPct: number
+  /** 0..100 : part des emplois manquants pourvus par une nouvelle immigration de travail (%) ; le reste n'est pas créé, trajectoires seulement. */
+  partEmploisManquantsImmigrationPct: number
+  /** 0..700 000 : personnes régularisées à partir de 2028, trajectoires seulement. */
+  effectifRegularisation: number
 }
 
 export interface ModelOptions {

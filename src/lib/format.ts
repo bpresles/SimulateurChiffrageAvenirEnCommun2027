@@ -45,6 +45,7 @@ export function fmtEmplois(v: number, signe = false): string {
 
 /** Valeur numérique d'une hypothèse avec son unité. */
 export function fmtValeurUnite(v: number, unite: string): string {
+  if (unite === 'année') return String(v)
   const d = Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 3 : Math.abs(v) >= 100 ? 1 : 2
   const s = nf(d, false).format(v)
   return unite ? `${s}${NBSP}${unite}` : s

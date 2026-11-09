@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { SCENARIOS } from '../data/scenarios'
-import { CLES_AVEC_VARIANTE, memeParamsStrict, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from './presets'
+import { CLES_AVEC_VARIANTE, PARAMS_HORS_PRESET, memeParamsStrict, paramsHorsPreset, paramsPreset, parametresDeReinitialisation, reconnaitrePreset } from './presets'
 import { simuler } from './simulate'
 
 describe('variantes sans leviers monétaires', () => {
@@ -43,10 +43,18 @@ describe('variantes sans leviers monétaires', () => {
     for (const cle of CLES_AVEC_VARIANTE.filter((c) => c !== 'bas'))
       for (const sans of [true, false]) expect(reconnaitrePreset(paramsPreset(cle, sans))!.cle).toBe(cle)
   })
-  it('un jeu modifié n’est pas reconnu, la croissance nominale est ignorée', () => {
+  it('un jeu modifié n’est pas reconnu, les hypothèses macroéconomiques sont ignorées', () => {
     const p = paramsPreset('complet', false)
     expect(reconnaitrePreset({ ...p, percentile: 55 })).toBeNull()
-    expect(reconnaitrePreset({ ...p, croissanceNominalePct: 1 })).toEqual({ cle: 'complet', sansLeviers: false })
+    const macro = { croissanceLongTermePct: 1.5, inflationPct: 3, ecartDepensesPct: -1, tauxRecettesActivitePct: 45, rendementCapitalPct: 10, substitutionImports: 1, tauxBonificationPct: 2, partPretsUtilisesPct: 27, dureeMonteeInvestissement: 15, ecartPrixElectricite: 30, margeElectricite: 5, anneesEcartElectricite: 4, rachatEngie: false, partChomeursMobilisablesPct: 40, partEmploisManquantsImmigrationPct: 60, effectifRegularisation: 200000 }
+    expect(reconnaitrePreset({ ...p, ...macro })).toEqual({ cle: 'complet', sansLeviers: false })
+  })
+  it('changer de préréglage conserve les hypothèses macroéconomiques et la bonification', () => {
+    const courant = { ...paramsPreset('complet', false), croissanceLongTermePct: -0.5, inflationPct: 2.2, ecartDepensesPct: 1, tauxRecettesActivitePct: 40, rendementCapitalPct: 8, substitutionImports: 0.7, tauxBonificationPct: 3, partPretsUtilisesPct: 50, dureeMonteeInvestissement: 20, ecartPrixElectricite: 48, margeElectricite: 10, anneesEcartElectricite: 3, rachatEngie: false, partChomeursMobilisablesPct: 35, partEmploisManquantsImmigrationPct: 50, effectifRegularisation: 300000 }
+    const suivant = { ...paramsPreset('bas', true), ...paramsHorsPreset(courant) }
+    for (const k of PARAMS_HORS_PRESET) expect(suivant[k]).toBe(courant[k])
+    expect(suivant.percentile).toBe(30)
+    expect(reconnaitrePreset(suivant)).toEqual({ cle: 'bas', sansLeviers: true })
   })
 })
 
@@ -59,16 +67,29 @@ describe('réinitialisation des réglages', () => {
         expect(r.sansLeviers).toBe(sans)
         expect(memeParamsStrict(r.params, paramsPreset(cle, sans))).toBe(true)
         expect(r.params.retoursCourantsBase).toBe(14)
-        expect(r.params.croissanceNominalePct).toBe(2.5)
+        expect(r.params.croissanceLongTermePct).toBe(1.2)
+        expect(r.params.inflationPct).toBe(1.5)
+        expect(r.params.ecartDepensesPct).toBe(0)
+        expect(r.params.tauxRecettesActivitePct).toBeCloseTo(35, 12)
+        expect(r.params.rendementCapitalPct).toBe(2)
+        expect(r.params.substitutionImports).toBe(0.45)
         expect(r.params.tauxBonificationPct).toBe(0)
+        expect(r.params.partPretsUtilisesPct).toBe(100)
+        expect(r.params.dureeMonteeInvestissement).toBe(10)
+        expect(r.params.ecartPrixElectricite).toBe(0)
+        expect(r.params.margeElectricite).toBeCloseTo(16.5, 12)
+        expect(r.params.anneesEcartElectricite).toBe(2)
+        expect(r.params.rachatEngie).toBe(true)
+        expect(r.params.partChomeursMobilisablesPct).toBe(25)
+        expect(r.params.partEmploisManquantsImmigrationPct).toBe(100)
+        expect(r.params.effectifRegularisation).toBe(410000)
         expect(r.params.cadesCompteDansSolde).toBe(true)
         expect(r.rho).toBe(0.5)
         expect(reconnaitrePreset(r.params)).toEqual({ cle, sansLeviers: sans })
       }
   })
-  it('l’horizon revient à celui du préréglage', () => {
-    expect(parametresDeReinitialisation('an1', false).params.horizon).toBe('an1')
-    expect(parametresDeReinitialisation('haut', false).params.horizon).toBe('anneePleine')
+  it('l’horizon est toujours l’année pleine', () => {
+    for (const s of SCENARIOS) expect(parametresDeReinitialisation(s.cle, false).params.horizon).toBe('anneePleine')
   })
   it('replie sur « complet » (avec leviers) sans préréglage connu', () => {
     const r = parametresDeReinitialisation(null, false)
@@ -83,6 +104,6 @@ describe('réinitialisation des réglages', () => {
   })
   it('détecte un écart avec la référence (croissance modifiée)', () => {
     const ref = parametresDeReinitialisation('complet', false)
-    expect(memeParamsStrict({ ...ref.params, croissanceNominalePct: 1 }, ref.params)).toBe(false)
+    expect(memeParamsStrict({ ...ref.params, croissanceLongTermePct: 1 }, ref.params)).toBe(false)
   })
 })
